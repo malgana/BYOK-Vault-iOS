@@ -58,23 +58,26 @@ struct AddKeyView: View {
             Form {
                 // Выбор платформы
                 if !isEditMode {
-                    Section("Платформа") {
-                        HStack {
+                    Section {
+                        Menu {
                             Picker("Платформа", selection: $selectedPlatformName) {
-                                Text("Выберите платформу").tag("")
                                 ForEach(availablePlatforms, id: \.self) { platform in
                                     Text(platform).tag(platform)
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .tint(.primary)
-                            
-                            Spacer()
+                            .pickerStyle(.inline)
+                            .labelsHidden()
+                        } label: {
+                            HStack {
+                                Text(selectedPlatformName.isEmpty ? "Выберите платформу" : selectedPlatformName)
+                                    .foregroundStyle(selectedPlatformName.isEmpty ? .secondary : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
                         }
-                        .listRowBackground(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(uiColor: .tertiarySystemGroupedBackground))
-                        )
                         
                         // Поле для новой платформы
                         if selectedPlatformName == "New" {
@@ -83,25 +86,23 @@ struct AddKeyView: View {
                         }
                     }
                 } else {
-                    Section("Платформа") {
+                    Section {
                         HStack {
-                            Text("Платформа")
-                                .foregroundStyle(.secondary)
-                            Spacer()
                             Text(editingKey?.platform?.name ?? "")
                                 .foregroundStyle(.primary)
+                            Spacer()
                         }
                     }
                 }
                 
                 // Название ключа
-                Section("Название") {
-                    TextField("Мое название", text: $myName)
+                Section {
+                    TextField("Название ключа", text: $myName)
                         .autocorrectionDisabled()
                 }
                 
                 // API ключ
-                Section("API Ключ") {
+                Section {
                     HStack {
                         TextField("API ключ", text: $apiKeyValue, axis: .vertical)
                             .font(.system(.body, design: .monospaced))
@@ -117,7 +118,7 @@ struct AddKeyView: View {
                         } label: {
                             Image(systemName: "doc.on.clipboard")
                                 .font(.title3)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(.green)
                         }
                         .buttonStyle(.plain)
                     }
@@ -158,6 +159,7 @@ struct AddKeyView: View {
             .onAppear {
                 setupInitialValues()
             }
+        .tint(.green)
         }
     }
     

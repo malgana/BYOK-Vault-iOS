@@ -14,15 +14,20 @@ struct PlatformKeysListView: View {
     @State private var showingAddKey = false
     
     var body: some View {
-        List {
-            ForEach(platform.apiKeys) { apiKey in
-                NavigationLink {
-                    KeyDetailView(apiKey: apiKey)
-                } label: {
-                    APIKeyRow(apiKey: apiKey)
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(platform.apiKeys) { apiKey in
+                    NavigationLink {
+                        KeyDetailView(apiKey: apiKey)
+                    } label: {
+                        APIKeyRow(apiKey: apiKey)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding()
         }
+        .background(Color(uiColor: .systemBackground))
         .navigationTitle(platform.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -45,48 +50,39 @@ struct APIKeyRow: View {
     let apiKey: APIKey
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(apiKey.myName)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                 
-                Spacer()
-                
-                // Статус валидации
-                if apiKey.isValid {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
-                } else {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.caption)
-                }
-            }
-            
-            // Статистика если есть
-            if let platform = apiKey.platform, platform.supportsStatistics {
-                HStack(spacing: 12) {
-                    if let spent = apiKey.totalSpent {
-                        Label(String(format: "$%.2f", spent), systemImage: "dollarsign.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
-                    
-                    if let tokens = apiKey.tokensUsed {
-                        Label(apiKey.formattedTokens, systemImage: "number.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
+                // Статистика если есть
+                if let platform = apiKey.platform, platform.supportsStatistics {
+                    HStack(spacing: 12) {
+                        if let spent = apiKey.totalSpent {
+                            Label(String(format: "$%.2f", spent), systemImage: "dollarsign.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                        
+                        if let tokens = apiKey.tokensUsed {
+                            Label(apiKey.formattedTokens, systemImage: "number.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
                     }
                 }
             }
             
-            // Дата добавления
-            Text("Добавлен: \(apiKey.dateAdded, format: .dateTime.day().month().year())")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
+        .padding()
+        .background(Color(uiColor: .secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

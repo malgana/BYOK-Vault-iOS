@@ -117,10 +117,6 @@ struct PlatformRow: View {
             }
             
             Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
     }
@@ -156,7 +152,7 @@ struct PlatformRow: View {
         case "Hailuo": return "waveform"
         case "DeepSeek": return "magnifyingglass.circle.fill"
         case "Reve AI": return "eye.circle.fill"
-        default: return "key.fill"
+        default: return "cube.fill"
         }
     }
     
