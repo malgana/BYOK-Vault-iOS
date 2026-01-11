@@ -11,6 +11,7 @@ import SwiftData
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Platform.name) private var platforms: [Platform]
+    @Query private var allKeys: [APIKey] // Для отслеживания изменений в ключах
     @State private var showingAddKey = false
     
     // Только платформы с ключами

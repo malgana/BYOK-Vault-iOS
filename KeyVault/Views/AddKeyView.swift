@@ -178,15 +178,10 @@ struct AddKeyView: View {
     private func saveKey() {
         guard isFormValid else { return }
         
-        isValidating = true
-        
-        // Небольшая задержка для UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            if isEditMode {
-                updateExistingKey()
-            } else {
-                createNewKey()
-            }
+        if isEditMode {
+            updateExistingKey()
+        } else {
+            createNewKey()
         }
     }
     
@@ -224,7 +219,9 @@ struct AddKeyView: View {
         // TODO: Валидация ключа через API
         newKey.isValid = true
         
-        isValidating = false
+        // Форсируем сохранение
+        try? modelContext.save()
+        
         dismiss()
     }
     
@@ -248,7 +245,9 @@ struct AddKeyView: View {
             editingKey.isValid = false
         }
         
-        isValidating = false
+        // Форсируем сохранение
+        try? modelContext.save()
+        
         dismiss()
     }
     

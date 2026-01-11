@@ -10,7 +10,7 @@ import SwiftData
 
 struct PlatformKeysListView: View {
     @Environment(\.modelContext) private var modelContext
-    let platform: Platform
+    @Bindable var platform: Platform
     @State private var showingAddKey = false
     
     var body: some View {
