@@ -51,28 +51,9 @@ struct APIKeyRow: View {
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(apiKey.myName)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                
-                // Статистика если есть
-                if let platform = apiKey.platform, platform.supportsStatistics {
-                    HStack(spacing: 12) {
-                        if let spent = apiKey.totalSpent {
-                            Label(String(format: "$%.2f", spent), systemImage: "dollarsign.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.green)
-                        }
-                        
-                        if let tokens = apiKey.tokensUsed {
-                            Label(apiKey.formattedTokens, systemImage: "number.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                    }
-                }
-            }
+            Text(apiKey.myName)
+                .font(.headline)
+                .foregroundStyle(.primary)
             
             Spacer()
             
@@ -93,13 +74,9 @@ struct APIKeyRow: View {
     let platform = Platform(name: "Anthropic")
     let key1 = APIKey(myName: "Рабочий ключ", platform: platform)
     key1.isValid = true
-    key1.totalSpent = 15.30
-    key1.tokensUsed = 2_500_000
     
     let key2 = APIKey(myName: "Личный ключ", platform: platform)
     key2.isValid = true
-    key2.totalSpent = 8.20
-    key2.tokensUsed = 1_200_000
     
     container.mainContext.insert(platform)
     container.mainContext.insert(key1)

@@ -103,13 +103,6 @@ struct PlatformRow: View {
                 Text("\(platform.apiKeys.count) \(keysText)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                
-                // Показываем общую статистику если есть
-                if let totalSpent = totalSpentForPlatform {
-                    Text(totalSpent)
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
             }
             
             Spacer()
@@ -152,11 +145,6 @@ struct PlatformRow: View {
         }
     }
     
-    private var totalSpentForPlatform: String? {
-        let total = platform.apiKeys.compactMap { $0.totalSpent }.reduce(0, +)
-        guard total > 0 else { return nil }
-        return String(format: "Всего: $%.2f", total)
-    }
 }
 
 #Preview {

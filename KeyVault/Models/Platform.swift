@@ -30,9 +30,4 @@ final class Platform {
         "DeepSeek",
         "Reve AI"
     ]
-    
-    // Проверка поддерживает ли платформа статистику
-    var supportsStatistics: Bool {
-        return name == "Anthropic" || name == "OpenAI"
-    }
 }

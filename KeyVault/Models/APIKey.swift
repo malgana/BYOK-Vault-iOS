@@ -15,11 +15,6 @@ final class APIKey {
     var dateAdded: Date
     var isValid: Bool
     
-    // Статистика (только для платформ с поддержкой)
-    var totalSpent: Double? // В долларах
-    var tokensUsed: Int?
-    var lastStatisticsUpdate: Date?
-    
     @Relationship
     var platform: Platform?
     
@@ -29,22 +24,5 @@ final class APIKey {
         self.keychainID = UUID().uuidString
         self.dateAdded = Date()
         self.isValid = false
-    }
-    
-    // Форматированная сумма
-    var formattedSpent: String {
-        guard let spent = totalSpent else { return "—" }
-        return String(format: "$%.2f", spent)
-    }
-    
-    // Форматированные токены
-    var formattedTokens: String {
-        guard let tokens = tokensUsed else { return "—" }
-        if tokens >= 1_000_000 {
-            return String(format: "%.1fM", Double(tokens) / 1_000_000)
-        } else if tokens >= 1_000 {
-            return String(format: "%.1fK", Double(tokens) / 1_000)
-        }
-        return "\(tokens)"
     }
 }

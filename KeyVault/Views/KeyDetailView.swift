@@ -70,36 +70,6 @@ struct KeyDetailView: View {
             }
             .padding(.horizontal)
             .frame(maxHeight: .infinity)
-            
-            // Статистика внизу (только для поддерживаемых платформ)
-            if apiKey.platform?.supportsStatistics == true {
-                VStack(spacing: 0) {
-                    Divider()
-                    
-                    VStack(spacing: 12) {
-                        Text("Статистика")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        StatisticRow(
-                            icon: "dollarsign.circle.fill",
-                            title: "Потрачено",
-                            value: apiKey.formattedSpent,
-                            color: .green
-                        )
-                        
-                        StatisticRow(
-                            icon: "number.circle.fill",
-                            title: "Токены",
-                            value: apiKey.formattedTokens,
-                            color: .blue
-                        )
-                    }
-                    .padding()
-                    .background(Color(uiColor: .systemGroupedBackground))
-                }
-            }
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(apiKey.myName)
@@ -164,31 +134,6 @@ struct KeyDetailView: View {
     }
 }
 
-// MARK: - Statistic Row
-struct StatisticRow: View {
-    let icon: String
-    let title: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        HStack {
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: icon)
-                    .foregroundStyle(color)
-            }
-            
-            Spacer()
-            
-            Text(value)
-                .fontWeight(.semibold)
-                .foregroundStyle(color)
-        }
-    }
-}
-
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
@@ -196,9 +141,6 @@ struct StatisticRow: View {
     let platform = Platform(name: "Anthropic")
     let key = APIKey(myName: "Рабочий ключ", platform: platform)
     key.isValid = true
-    key.totalSpent = 15.30
-    key.tokensUsed = 2_500_000
-    key.lastStatisticsUpdate = Date()
     
     container.mainContext.insert(platform)
     container.mainContext.insert(key)
