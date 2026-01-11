@@ -85,4 +85,23 @@ final class KeychainService {
         
         return status == errSecSuccess
     }
+    
+    // Получить все сохранённые ключи (значения)
+    func getAllStoredKeys() -> [String] {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitAll
+        ]
+        
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        guard status == errSecSuccess,
+              let dataArray = result as? [Data] else {
+            return []
+        }
+        
+        return dataArray.compactMap { String(data: $0, encoding: .utf8) }
+    }
 }

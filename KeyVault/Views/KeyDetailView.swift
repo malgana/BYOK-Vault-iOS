@@ -58,6 +58,7 @@ struct KeyDetailView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
+                
             }
             .padding(.horizontal)
             .frame(maxHeight: .infinity)

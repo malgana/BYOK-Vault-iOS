@@ -91,15 +91,10 @@ struct PlatformRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Иконка платформы
-            ZStack {
-                Circle()
-                    .fill(platformColor.opacity(0.2))
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: platformIcon)
-                    .font(.title3)
-                    .foregroundStyle(platformColor)
-            }
+            Image(systemName: platformIcon)
+                .font(.title2)
+                .foregroundStyle(platformColor)
+                .frame(width: 32)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(platform.name)

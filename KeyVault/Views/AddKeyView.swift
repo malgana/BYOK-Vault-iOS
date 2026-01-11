@@ -12,6 +12,7 @@ struct AddKeyView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query private var platforms: [Platform]
+    @Query private var allKeys: [APIKey]
     
     // Для редактирования существующего ключа
     var editingKey: APIKey?
@@ -26,6 +27,7 @@ struct AddKeyView: View {
     @State private var isValidating: Bool = false
     @State private var showingError: Bool = false
     @State private var errorMessage: String = ""
+    @State private var validationSuccess: Bool = false
     
     private let defaultPlatforms = Platform.defaultPlatforms
     
@@ -51,6 +53,20 @@ struct AddKeyView: View {
             return customPlatformName.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return selectedPlatformName
+    }
+    
+    private var supportsValidation: Bool {
+        finalPlatformName == "Anthropic"
+    }
+    
+    private var buttonText: String {
+        if isEditMode {
+            return "Сохранить изменения"
+        }
+        if validationSuccess {
+            return "Ключ работает"
+        }
+        return supportsValidation ? "Проверить" : "Сохранить ключ"
     }
     
     var body: some View {
@@ -103,42 +119,53 @@ struct AddKeyView: View {
                 
                 // API ключ
                 Section {
-                    HStack {
-                        TextField("API ключ", text: $apiKeyValue, axis: .vertical)
-                            .font(.system(.body, design: .monospaced))
-                            .lineLimit(3...6)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .disabled(true)
-                        
-                        Button {
-                            if let clipboardText = UIPasteboard.general.string {
-                                apiKeyValue = clipboardText
+                    Button {
+                        if let clipboardText = UIPasteboard.general.string {
+                            apiKeyValue = clipboardText
+                        }
+                    } label: {
+                        HStack {
+                            if apiKeyValue.isEmpty {
+                                Text("Нажмите чтобы вставить ключ")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text(apiKeyValue)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.leading)
                             }
-                        } label: {
+                            
+                            Spacer()
+                            
                             Image(systemName: "doc.on.clipboard")
                                 .font(.title3)
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .frame(minHeight: 60, alignment: .topLeading)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
                 
-                // Кнопка сохранения
+                // Кнопка сохранения/проверки
                 Section {
                     Button {
-                        saveKey()
+                        validateAndSave()
                     } label: {
                         HStack {
                             if isValidating {
                                 ProgressView()
                                     .scaleEffect(0.8)
+                            } else if validationSuccess {
+                                Image(systemName: "checkmark")
                             }
-                            Text(isEditMode ? "Сохранить изменения" : "Сохранить ключ")
+                            Text(buttonText)
                         }
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(validationSuccess ? .white : .green)
                     }
-                    .disabled(!isFormValid || isValidating)
+                    .listRowBackground(validationSuccess ? Color.green : Color(uiColor: .secondarySystemGroupedBackground))
+                    .disabled(!isFormValid || isValidating || validationSuccess)
                 }
             }
             .scrollDismissesKeyboard(.interactively)
@@ -175,17 +202,75 @@ struct AddKeyView: View {
         }
     }
     
-    private func saveKey() {
+    private func validateAndSave() {
         guard isFormValid else { return }
+        
+        // Проверка на дубликат ключа (только при создании нового)
+        if !isEditMode {
+            if let existingKey = findExistingKey(withValue: apiKeyValue) {
+                let platformName = existingKey.platform?.name ?? "Неизвестно"
+                showError("Этот ключ уже добавлен: \"\(existingKey.myName)\" (\(platformName))")
+                return
+            }
+        }
         
         if isEditMode {
             updateExistingKey()
+        } else if supportsValidation {
+            // Для Anthropic — сначала валидируем
+            validateAndCreateKey()
         } else {
-            createNewKey()
+            // Для остальных платформ — просто сохраняем
+            createNewKey(isValid: false)
         }
     }
     
-    private func createNewKey() {
+    private func findExistingKey(withValue value: String) -> APIKey? {
+        for key in allKeys {
+            if let storedValue = KeychainService.shared.get(for: key.keychainID),
+               storedValue == value {
+                return key
+            }
+        }
+        return nil
+    }
+    
+    private func validateAndCreateKey() {
+        isValidating = true
+        
+        Task {
+            let result = await AnthropicService.shared.validateAPIKey(apiKeyValue)
+            
+            await MainActor.run {
+                isValidating = false
+                
+                switch result {
+                case .valid:
+                    // Показываем "Ключ работает"
+                    withAnimation {
+                        validationSuccess = true
+                    }
+                    
+                    // Через 1 секунду сохраняем и закрываем
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        createNewKey(isValid: true)
+                    }
+                    
+                case .invalid(let message):
+                    showError(message)
+                    
+                case .serverError:
+                    // Проблемы сервера — сохраняем без валидации
+                    createNewKey(isValid: false)
+                    
+                case .networkError(let message):
+                    showError(message)
+                }
+            }
+        }
+    }
+    
+    private func createNewKey(isValid: Bool) {
         let platformName = finalPlatformName
         
         guard !platformName.isEmpty else {
@@ -204,6 +289,7 @@ struct AddKeyView: View {
         
         // Создаем новый ключ
         let newKey = APIKey(myName: myName, platform: platform)
+        newKey.isValid = isValid
         
         // Сохраняем API ключ в Keychain
         let saved = KeychainService.shared.save(key: apiKeyValue, for: newKey.keychainID)
@@ -216,12 +302,10 @@ struct AddKeyView: View {
         // Сохраняем в базу данных
         modelContext.insert(newKey)
         
-        // TODO: Валидация ключа через API
-        newKey.isValid = true
-        
         // Форсируем сохранение
         try? modelContext.save()
         
+        // Закрываем sheet и открываем детали
         dismiss()
     }
     
