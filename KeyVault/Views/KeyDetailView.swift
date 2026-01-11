@@ -25,9 +25,17 @@ struct KeyDetailView: View {
         VStack(spacing: 0) {
             // API ключ по центру экрана
             VStack(spacing: 16) {
-                Text("API Ключ")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("API Ключ")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    
+                    if apiKey.isValid {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.green)
+                    }
+                }
                 
                 Button {
                     copyToClipboard()
