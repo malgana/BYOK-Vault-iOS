@@ -91,10 +91,7 @@ struct PlatformRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Иконка платформы
-            Image(systemName: platformIcon)
-                .font(.title2)
-                .foregroundStyle(platformColor)
-                .frame(width: 32)
+            PlatformIconView(platform: platform, size: 40)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(platform.name)
@@ -120,31 +117,6 @@ struct PlatformRow: View {
             return "ключей"
         }
     }
-    
-    private var platformColor: Color {
-        switch platform.name {
-        case "Anthropic": return .orange
-        case "OpenAI": return .green
-        case "Google AI": return .blue
-        case "Hailuo": return .purple
-        case "DeepSeek": return .cyan
-        case "Reve AI": return .pink
-        default: return .gray
-        }
-    }
-    
-    private var platformIcon: String {
-        switch platform.name {
-        case "Anthropic": return "brain.head.profile"
-        case "OpenAI": return "sparkles"
-        case "Google AI": return "g.circle.fill"
-        case "Hailuo": return "waveform"
-        case "DeepSeek": return "magnifyingglass.circle.fill"
-        case "Reve AI": return "eye.circle.fill"
-        default: return "cube.fill"
-        }
-    }
-    
 }
 
 #Preview {

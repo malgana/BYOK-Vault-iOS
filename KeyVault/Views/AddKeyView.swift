@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct AddKeyView: View {
     @Environment(\.modelContext) private var modelContext
@@ -28,6 +29,11 @@ struct AddKeyView: View {
     @State private var showingError: Bool = false
     @State private var errorMessage: String = ""
     @State private var validationSuccess: Bool = false
+    
+    // Для загрузки иконки
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedIconData: Data?
+    @State private var selectedIconImage: UIImage?
     
     private let defaultPlatforms = Platform.defaultPlatforms
     
@@ -99,6 +105,44 @@ struct AddKeyView: View {
                         if selectedPlatformName == "New" {
                             TextField("Название платформы", text: $customPlatformName)
                                 .autocorrectionDisabled()
+                        }
+                    } header: {
+                        Text("Платформа")
+                    }
+                    
+                    // Загрузка иконки для новой платформы
+                    if selectedPlatformName == "New" && !customPlatformName.isEmpty {
+                        Section {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                HStack {
+                                    if let image = selectedIconImage {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    } else {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.title2)
+                                            .foregroundStyle(.blue)
+                                            .frame(width: 50, height: 50)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(selectedIconImage == nil ? "Добавить иконку" : "Изменить иконку")
+                                            .foregroundStyle(.primary)
+                                        Text("Рекомендуемый размер: 250×250px")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        } header: {
+                            Text("Иконка (опционально)")
                         }
                     }
                 } else {
@@ -186,6 +230,11 @@ struct AddKeyView: View {
             .onAppear {
                 setupInitialValues()
             }
+            .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                Task {
+                    await loadSelectedPhoto()
+                }
+            }
         .tint(.green)
         }
     }
@@ -199,6 +248,31 @@ struct AddKeyView: View {
         } else if let preselectedPlatform = preselectedPlatform {
             // Предвыбранная платформа
             selectedPlatformName = preselectedPlatform.name
+        }
+    }
+    
+    private func loadSelectedPhoto() async {
+        guard let photoItem = selectedPhotoItem else {
+            selectedIconImage = nil
+            selectedIconData = nil
+            return
+        }
+        
+        do {
+            if let data = try await photoItem.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                // Обрабатываем изображение: сжимаем до 250x250px
+                if let processedData = ImageHelper.processImage(image) {
+                    await MainActor.run {
+                        selectedIconData = processedData
+                        selectedIconImage = ImageHelper.imageFromData(processedData)
+                    }
+                }
+            }
+        } catch {
+            await MainActor.run {
+                showError("Не удалось загрузить изображение")
+            }
         }
     }
     
@@ -283,7 +357,8 @@ struct AddKeyView: View {
         if let existingPlatform = platforms.first(where: { $0.name == platformName }) {
             platform = existingPlatform
         } else {
-            platform = Platform(name: platformName)
+            // Создаем новую платформу с иконкой (если есть)
+            platform = Platform(name: platformName, customIconData: selectedIconData)
             modelContext.insert(platform)
         }
         
