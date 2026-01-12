@@ -36,7 +36,7 @@ final class Platform {
         switch name {
         case "Anthropic": return "anthropic"
         case "OpenAI": return "openai"
-        case "Google AI": return "google-ai"
+        case "Gemini": return "google-ai"
         case "Hailuo": return "hailuo"
         case "DeepSeek": return "deepseek"
         case "Reve AI": return "reve-ai"
@@ -50,7 +50,7 @@ final class Platform {
     static let defaultPlatforms = [
         "Anthropic",
         "OpenAI",
-        "Google AI",
+        "Gemini",
         "Hailuo",
         "DeepSeek",
         "Reve AI",

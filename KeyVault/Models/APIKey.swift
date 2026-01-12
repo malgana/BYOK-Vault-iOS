@@ -14,15 +14,17 @@ final class APIKey {
     var keychainID: String // UUID для доступа к ключу в Keychain
     var dateAdded: Date
     var isValid: Bool
+    var note: String? // Заметка к ключу
     
     @Relationship
     var platform: Platform?
     
-    init(myName: String, platform: Platform) {
+    init(myName: String, platform: Platform, note: String? = nil) {
         self.myName = myName
         self.platform = platform
         self.keychainID = UUID().uuidString
         self.dateAdded = Date()
         self.isValid = false
+        self.note = note
     }
 }

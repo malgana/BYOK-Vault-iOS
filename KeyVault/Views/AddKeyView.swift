@@ -23,6 +23,7 @@ struct AddKeyView: View {
     
     @State private var myName: String = ""
     @State private var apiKeyValue: String = ""
+    @State private var note: String = ""
     @State private var selectedPlatformName: String = ""
     @State private var customPlatformName: String = ""
     @State private var isValidating: Bool = false
@@ -84,7 +85,13 @@ struct AddKeyView: View {
                         Menu {
                             Picker("Платформа", selection: $selectedPlatformName) {
                                 ForEach(availablePlatforms, id: \.self) { platform in
-                                    Text(platform).tag(platform)
+                                    if platform == "New" {
+                                        Text("NEW")
+                                            .foregroundStyle(.tint)
+                                            .tag(platform)
+                                    } else {
+                                        Text(platform).tag(platform)
+                                    }
                                 }
                             }
                             .pickerStyle(.inline)
@@ -159,6 +166,17 @@ struct AddKeyView: View {
                 Section {
                     TextField("Название ключа", text: $myName)
                         .autocorrectionDisabled()
+                } header: {
+                    Text("Название")
+                }
+                
+                // Заметка (опционально)
+                Section {
+                    TextField("Добавить заметку...", text: $note, axis: .vertical)
+                        .lineLimit(3...6)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("Заметка (опционально)")
                 }
                 
                 // API ключ
@@ -243,6 +261,7 @@ struct AddKeyView: View {
         if let editingKey = editingKey {
             // Режим редактирования
             myName = editingKey.myName
+            note = editingKey.note ?? ""
             apiKeyValue = KeychainService.shared.get(for: editingKey.keychainID) ?? ""
             selectedPlatformName = editingKey.platform?.name ?? ""
         } else if let preselectedPlatform = preselectedPlatform {
@@ -284,6 +303,8 @@ struct AddKeyView: View {
             if let existingKey = findExistingKey(withValue: apiKeyValue) {
                 let platformName = existingKey.platform?.name ?? "Неизвестно"
                 showError("Этот ключ уже добавлен: \"\(existingKey.myName)\" (\(platformName))")
+                // Очищаем поле с ключом, чтобы можно было вставить правильный
+                apiKeyValue = ""
                 return
             }
         }
@@ -362,8 +383,9 @@ struct AddKeyView: View {
             modelContext.insert(platform)
         }
         
-        // Создаем новый ключ
-        let newKey = APIKey(myName: myName, platform: platform)
+        // Создаем новый ключ с заметкой
+        let noteValue = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newKey = APIKey(myName: myName, platform: platform, note: noteValue.isEmpty ? nil : noteValue)
         newKey.isValid = isValid
         
         // Сохраняем API ключ в Keychain
@@ -389,6 +411,10 @@ struct AddKeyView: View {
         
         // Обновляем название
         editingKey.myName = myName
+        
+        // Обновляем заметку
+        let noteValue = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        editingKey.note = noteValue.isEmpty ? nil : noteValue
         
         // Обновляем ключ в Keychain если изменился
         let currentKey = KeychainService.shared.get(for: editingKey.keychainID) ?? ""

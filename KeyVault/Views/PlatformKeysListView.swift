@@ -51,9 +51,19 @@ struct APIKeyRow: View {
     
     var body: some View {
         HStack {
-            Text(apiKey.myName)
-                .font(.headline)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(apiKey.myName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                
+                // Превью заметки (если есть)
+                if let note = apiKey.note, !note.isEmpty {
+                    Text(note)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
             
             Spacer()
             
@@ -72,15 +82,19 @@ struct APIKeyRow: View {
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
     
     let platform = Platform(name: "Anthropic")
-    let key1 = APIKey(myName: "Рабочий ключ", platform: platform)
+    let key1 = APIKey(myName: "Рабочий ключ", platform: platform, note: "Для работы с API в продакшене")
     key1.isValid = true
     
-    let key2 = APIKey(myName: "Личный ключ", platform: platform)
+    let key2 = APIKey(myName: "Личный ключ", platform: platform, note: "Очень длинная заметка которая будет обрезаться в превью на одну строку с многоточием")
     key2.isValid = true
+    
+    let key3 = APIKey(myName: "Тестовый ключ", platform: platform)
+    key3.isValid = false
     
     container.mainContext.insert(platform)
     container.mainContext.insert(key1)
     container.mainContext.insert(key2)
+    container.mainContext.insert(key3)
     
     return NavigationStack {
         PlatformKeysListView(platform: platform)

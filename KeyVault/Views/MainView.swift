@@ -41,6 +41,27 @@ struct MainView: View {
             .sheet(isPresented: $showingAddKey) {
                 AddKeyView()
             }
+            .onAppear {
+                cleanupEmptyPlatforms()
+            }
+        }
+    }
+    
+    // MARK: - Cleanup
+    /// Удаляет пустые пользовательские платформы из базы данных
+    private func cleanupEmptyPlatforms() {
+        let emptyPlatforms = platforms.filter { platform in
+            // Удаляем только пользовательские платформы без ключей
+            !platform.isDefault && platform.apiKeys.isEmpty
+        }
+        
+        for platform in emptyPlatforms {
+            modelContext.delete(platform)
+        }
+        
+        // Сохраняем изменения, если что-то удалили
+        if !emptyPlatforms.isEmpty {
+            try? modelContext.save()
         }
     }
     

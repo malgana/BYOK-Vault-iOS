@@ -26,7 +26,7 @@ struct KeyDetailView: View {
             // API ключ по центру экрана
             VStack(spacing: 16) {
                 HStack(spacing: 6) {
-                    Text("API Ключ")
+                    Text("Секретный Ключ")
                         .font(.headline)
                         .foregroundStyle(.secondary)
                     
@@ -35,6 +35,15 @@ struct KeyDetailView: View {
                             .font(.subheadline)
                             .foregroundStyle(.green)
                     }
+                }
+                
+                // Заметка (если есть)
+                if let note = apiKey.note, !note.isEmpty {
+                    Text(note)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                 }
                 
                 Button {
@@ -124,22 +133,31 @@ struct KeyDetailView: View {
     }
     
     private func deleteKey() {
+        // Сохраняем ссылку на платформу и проверяем количество ключей ДО удаления
+        let platform = apiKey.platform
+        let isLastKey = platform?.apiKeys.count == 1
+        
         // Удаляем из Keychain
         _ = KeychainService.shared.delete(for: apiKey.keychainID)
         
         // Удаляем из базы данных
         modelContext.delete(apiKey)
         
+        // Если это был последний ключ платформы - удаляем и платформу
+        if let platform = platform, isLastKey {
+            modelContext.delete(platform)
+        }
+        
         dismiss()
     }
 }
 
-#Preview {
+#Preview("С заметкой") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
     
     let platform = Platform(name: "Anthropic")
-    let key = APIKey(myName: "Рабочий ключ", platform: platform)
+    let key = APIKey(myName: "Рабочий ключ", platform: platform, note: "Мой рабочий ключ для тестирования API")
     key.isValid = true
     
     container.mainContext.insert(platform)
@@ -147,6 +165,26 @@ struct KeyDetailView: View {
     
     // Сохраняем тестовый ключ в Keychain
     _ = KeychainService.shared.save(key: "sk-ant-test-key-123456789", for: key.keychainID)
+    
+    return NavigationStack {
+        KeyDetailView(apiKey: key)
+            .modelContainer(container)
+    }
+}
+
+#Preview("Без заметки") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
+    
+    let platform = Platform(name: "OpenAI")
+    let key = APIKey(myName: "Личный ключ", platform: platform)
+    key.isValid = true
+    
+    container.mainContext.insert(platform)
+    container.mainContext.insert(key)
+    
+    // Сохраняем тестовый ключ в Keychain
+    _ = KeychainService.shared.save(key: "sk-test-123", for: key.keychainID)
     
     return NavigationStack {
         KeyDetailView(apiKey: key)
