@@ -63,7 +63,7 @@ struct AddKeyView: View {
     }
     
     private var supportsValidation: Bool {
-        finalPlatformName == "Anthropic"
+        finalPlatformName == "Anthropic" || finalPlatformName == "DeepSeek"
     }
     
     private var buttonText: String {
@@ -334,34 +334,66 @@ struct AddKeyView: View {
         isValidating = true
         
         Task {
-            let result = await AnthropicService.shared.validateAPIKey(apiKeyValue)
-            
-            await MainActor.run {
-                isValidating = false
-                
-                switch result {
-                case .valid:
-                    // Показываем "Ключ работает"
-                    withAnimation {
-                        validationSuccess = true
-                    }
-                    
-                    // Через 1 секунду сохраняем и закрываем
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        createNewKey(isValid: true)
-                    }
-                    
-                case .invalid(let message):
-                    showError(message)
-                    
-                case .serverError:
-                    // Проблемы сервера — сохраняем без валидации
-                    createNewKey(isValid: false)
-                    
-                case .networkError(let message):
-                    showError(message)
-                }
+            // Выбираем сервис валидации в зависимости от платформы
+            if finalPlatformName == "DeepSeek" {
+                await validateWithDeepSeek()
+            } else {
+                await validateWithAnthropic()
             }
+        }
+    }
+    
+    private func validateWithAnthropic() async {
+        let result = await AnthropicService.shared.validateAPIKey(apiKeyValue)
+        
+        await MainActor.run {
+            isValidating = false
+            handleValidationResult(result)
+        }
+    }
+    
+    private func validateWithDeepSeek() async {
+        let result = await DeepSeekService.shared.validateAPIKey(apiKeyValue)
+        
+        await MainActor.run {
+            isValidating = false
+            
+            // Конвертируем результат DeepSeek в общий формат
+            switch result {
+            case .valid:
+                handleValidationResult(.valid)
+            case .invalid(let message):
+                handleValidationResult(.invalid(message))
+            case .serverError(let message):
+                handleValidationResult(.serverError(message))
+            case .networkError(let message):
+                handleValidationResult(.networkError(message))
+            }
+        }
+    }
+    
+    private func handleValidationResult(_ result: AnthropicService.ValidationResult) {
+        switch result {
+        case .valid:
+            // Показываем "Ключ работает"
+            withAnimation {
+                validationSuccess = true
+            }
+            
+            // Через 1 секунду сохраняем и закрываем
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                createNewKey(isValid: true)
+            }
+            
+        case .invalid(let message):
+            showError(message)
+            
+        case .serverError:
+            // Проблемы сервера — сохраняем без валидации
+            createNewKey(isValid: false)
+            
+        case .networkError(let message):
+            showError(message)
         }
     }
     
