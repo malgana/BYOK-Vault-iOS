@@ -63,7 +63,7 @@ struct AddKeyView: View {
     }
     
     private var supportsValidation: Bool {
-        ["Anthropic", "DeepSeek", "Gemini"].contains(finalPlatformName)
+        ["Anthropic", "DeepSeek", "Gemini", "OpenAI"].contains(finalPlatformName)
     }
     
     private var buttonText: String {
@@ -340,6 +340,8 @@ struct AddKeyView: View {
                 await validateWithDeepSeek()
             case "Gemini":
                 await validateWithGemini()
+            case "OpenAI":
+                await validateWithOpenAI()
             default:
                 await validateWithAnthropic()
             }
@@ -376,6 +378,25 @@ struct AddKeyView: View {
     
     private func validateWithGemini() async {
         let result = await GeminiService.shared.validateAPIKey(apiKeyValue)
+        
+        await MainActor.run {
+            isValidating = false
+            
+            switch result {
+            case .valid:
+                handleValidationResult(.valid)
+            case .invalid(let message):
+                handleValidationResult(.invalid(message))
+            case .serverError(let message):
+                handleValidationResult(.serverError(message))
+            case .networkError(let message):
+                handleValidationResult(.networkError(message))
+            }
+        }
+    }
+    
+    private func validateWithOpenAI() async {
+        let result = await OpenAIService.shared.validateAPIKey(apiKeyValue)
         
         await MainActor.run {
             isValidating = false
