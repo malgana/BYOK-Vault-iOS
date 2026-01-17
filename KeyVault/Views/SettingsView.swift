@@ -15,7 +15,6 @@ struct ExportedKey: Codable {
     let platformName: String
     let keyValue: String
     let note: String?
-    let isAdminKey: Bool
     let isValid: Bool
     let dateAdded: Date
 }
@@ -133,13 +132,6 @@ struct SettingsView: View {
                                 .foregroundStyle(.primary)
                         }
                         
-                        HStack {
-                            Text("Admin ключей")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(allKeys.filter { $0.isAdminKey }.count)")
-                                .foregroundStyle(.primary)
-                        }
                     } header: {
                         Text("Статистика")
                     }
@@ -239,7 +231,6 @@ struct SettingsView: View {
                 platformName: key.platform?.name ?? "Unknown",
                 keyValue: keyValue,
                 note: key.note,
-                isAdminKey: key.isAdminKey,
                 isValid: key.isValid,
                 dateAdded: key.dateAdded
             )
@@ -331,8 +322,7 @@ struct SettingsView: View {
             let newKey = APIKey(
                 myName: exportedKey.myName,
                 platform: platform,
-                note: exportedKey.note,
-                isAdminKey: exportedKey.isAdminKey
+                note: exportedKey.note
             )
             newKey.isValid = exportedKey.isValid
             newKey.dateAdded = exportedKey.dateAdded // Восстанавливаем оригинальную дату
