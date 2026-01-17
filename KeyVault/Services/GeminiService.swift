@@ -1,5 +1,5 @@
 //
-//  DeepSeekService.swift
+//  GeminiService.swift
 //  KeyVault
 //
 //  Created by Aleksandr Prostetsov on 17.01.26.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-actor DeepSeekService {
-    static let shared = DeepSeekService()
+actor GeminiService {
+    static let shared = GeminiService()
     
     private init() {}
     
@@ -21,20 +21,19 @@ actor DeepSeekService {
     
     /// Валидация API ключа через минимальный запрос
     func validateAPIKey(_ apiKey: String) async -> ValidationResult {
-        let url = URL(string: "https://api.deepseek.com/v1/chat/completions")!
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(apiKey)")!
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let body: [String: Any] = [
-            "model": "deepseek-chat",
-            "max_tokens": 1,
-            "messages": [
-                ["role": "user", "content": "Hi"]
+            "contents": [
+                ["parts": [["text": "Hi"]]]
             ],
-            "stream": false
+            "generationConfig": [
+                "maxOutputTokens": 1
+            ]
         ]
         
         do {
@@ -53,10 +52,18 @@ actor DeepSeekService {
             switch httpResponse.statusCode {
             case 200:
                 return .valid
-            case 401:
+            case 400:
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let error = json["error"] as? [String: Any],
+                   let message = error["message"] as? String {
+                    if message.contains("API key") {
+                        return .invalid("Неверный API ключ")
+                    }
+                    return .invalid(message)
+                }
+                return .invalid("Неверный запрос")
+            case 401, 403:
                 return .invalid("Неверный API ключ")
-            case 403:
-                return .invalid("Ключ заблокирован")
             case 429:
                 return .valid
             case 500, 502, 503:

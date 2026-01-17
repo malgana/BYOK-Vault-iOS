@@ -63,7 +63,7 @@ struct AddKeyView: View {
     }
     
     private var supportsValidation: Bool {
-        finalPlatformName == "Anthropic" || finalPlatformName == "DeepSeek"
+        ["Anthropic", "DeepSeek", "Gemini"].contains(finalPlatformName)
     }
     
     private var buttonText: String {
@@ -335,9 +335,12 @@ struct AddKeyView: View {
         
         Task {
             // Выбираем сервис валидации в зависимости от платформы
-            if finalPlatformName == "DeepSeek" {
+            switch finalPlatformName {
+            case "DeepSeek":
                 await validateWithDeepSeek()
-            } else {
+            case "Gemini":
+                await validateWithGemini()
+            default:
                 await validateWithAnthropic()
             }
         }
@@ -358,7 +361,25 @@ struct AddKeyView: View {
         await MainActor.run {
             isValidating = false
             
-            // Конвертируем результат DeepSeek в общий формат
+            switch result {
+            case .valid:
+                handleValidationResult(.valid)
+            case .invalid(let message):
+                handleValidationResult(.invalid(message))
+            case .serverError(let message):
+                handleValidationResult(.serverError(message))
+            case .networkError(let message):
+                handleValidationResult(.networkError(message))
+            }
+        }
+    }
+    
+    private func validateWithGemini() async {
+        let result = await GeminiService.shared.validateAPIKey(apiKeyValue)
+        
+        await MainActor.run {
+            isValidating = false
+            
             switch result {
             case .valid:
                 handleValidationResult(.valid)
