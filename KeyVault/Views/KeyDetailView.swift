@@ -40,14 +40,18 @@ struct KeyDetailView: View {
                 Button {
                     copyToClipboard()
                 } label: {
-                    Text(apiKeyValue)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.primary)
-                        .padding(20)
-                        .frame(maxWidth: .infinity)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .multilineTextAlignment(.center)
+                    ScrollView {
+                        Text(apiKeyValue)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: 300)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
                 .overlay(alignment: .top) {
