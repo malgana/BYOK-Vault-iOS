@@ -30,6 +30,7 @@ struct AddKeyView: View {
     @State private var showingError: Bool = false
     @State private var errorMessage: String = ""
     @State private var validationSuccess: Bool = false
+    @State private var validationFailed: Bool = false
     
     // Для загрузки иконки
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -72,6 +73,9 @@ struct AddKeyView: View {
         }
         if validationSuccess {
             return "Ключ работает"
+        }
+        if validationFailed {
+            return "Сохранить ключ"
         }
         return supportsValidation ? "Проверить" : "Сохранить ключ"
     }
@@ -311,8 +315,11 @@ struct AddKeyView: View {
         
         if isEditMode {
             updateExistingKey()
+        } else if validationFailed {
+            // Валидация не прошла ранее — сохраняем без валидации
+            createNewKey(isValid: false)
         } else if supportsValidation {
-            // Для Anthropic — сначала валидируем
+            // Для поддерживаемых платформ — сначала валидируем
             validateAndCreateKey()
         } else {
             // Для остальных платформ — просто сохраняем
@@ -448,15 +455,11 @@ struct AddKeyView: View {
                 createNewKey(isValid: true)
             }
             
-        case .invalid(let message):
-            showError(message)
-            
-        case .serverError:
-            // Проблемы сервера — сохраняем без валидации
-            createNewKey(isValid: false)
-            
-        case .networkError(let message):
-            showError(message)
+        case .invalid, .serverError, .networkError:
+            // Валидация не прошла — меняем кнопку на "Сохранить ключ"
+            withAnimation {
+                validationFailed = true
+            }
         }
     }
     
