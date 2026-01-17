@@ -187,7 +187,11 @@ struct AddKeyView: View {
                 Section {
                     Button {
                         if let clipboardText = UIPasteboard.general.string {
-                            apiKeyValue = clipboardText
+                            var transaction = Transaction()
+                            transaction.disablesAnimations = true
+                            withTransaction(transaction) {
+                                apiKeyValue = clipboardText
+                            }
                         }
                     } label: {
                         HStack {
@@ -203,9 +207,11 @@ struct AddKeyView: View {
                             
                             Spacer()
                             
-                            Image(systemName: "doc.on.clipboard")
-                                .font(.title3)
-                                .foregroundStyle(.secondary)
+                            if apiKeyValue.isEmpty {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .frame(minHeight: 60, alignment: .topLeading)
                         .contentShape(Rectangle())
@@ -232,6 +238,10 @@ struct AddKeyView: View {
                     }
                     .listRowBackground(validationSuccess ? Color.green : Color(uiColor: .secondarySystemGroupedBackground))
                     .disabled(!isFormValid || isValidating || validationSuccess)
+                } footer: {
+                    // Текст статуса валидации (всегда занимает место)
+                    Text(validationFailed ? "Проверка не пройдена" : " ")
+                        .foregroundStyle(.red)
                 }
             }
             .scrollDismissesKeyboard(.interactively)

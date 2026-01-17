@@ -35,23 +35,44 @@ actor HailuoService {
                 return .serverError("Неверный ответ сервера")
             }
             
+            // Проверяем base_resp на ошибки авторизации
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let baseResp = json["base_resp"] as? [String: Any],
+               let statusCode = baseResp["status_code"] as? Int {
+                let statusMsg = baseResp["status_msg"] as? String ?? ""
+                
+                // Проверяем сообщение на ошибки авторизации
+                let isAuthError = statusMsg.lowercased().contains("login fail") ||
+                                  statusMsg.lowercased().contains("invalid api") ||
+                                  statusMsg.lowercased().contains("authorization") ||
+                                  statusMsg.lowercased().contains("api key") ||
+                                  statusMsg.lowercased().contains("api secret")
+                
+                if isAuthError {
+                    return .invalid("Неверный API ключ")
+                }
+                
+                // Коды ошибок авторизации MiniMax
+                if statusCode == 1001 || statusCode == 1002 || statusCode == 2049 {
+                    return .invalid(statusMsg.isEmpty ? "Неверный API ключ" : statusMsg)
+                }
+                
+                // Успешные коды
+                if statusCode == 0 || statusCode == 2013 {
+                    return .valid
+                }
+                
+                // 1004 может быть и "file not found" и "login fail"
+                if statusCode == 1004 && !isAuthError {
+                    return .valid
+                }
+            }
+            
             switch httpResponse.statusCode {
             case 200...299:
                 return .valid
             case 400:
-                // 400 для несуществующего file_id означает, что аутентификация прошла успешно
-                if let responseString = String(data: data, encoding: .utf8),
-                   responseString.contains("file not found") || responseString.contains("invalid") || responseString.contains("not exist") {
-                    return .valid
-                }
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let baseResp = json["base_resp"] as? [String: Any],
-                   let statusCode = baseResp["status_code"] as? Int {
-                    if statusCode == 1004 || statusCode == 2013 {
-                        return .valid
-                    }
-                }
-                return .valid
+                return .invalid("Неверный запрос")
             case 401:
                 return .invalid("Неверный API ключ")
             case 403:
@@ -61,16 +82,6 @@ actor HailuoService {
             case 500, 502, 503:
                 return .serverError("Сервер недоступен")
             default:
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let baseResp = json["base_resp"] as? [String: Any],
-                   let statusCode = baseResp["status_code"] as? Int {
-                    if statusCode == 1001 || statusCode == 1002 || statusCode == 2049 {
-                        if let statusMsg = baseResp["status_msg"] as? String {
-                            return .invalid(statusMsg)
-                        }
-                        return .invalid("Неверный API ключ")
-                    }
-                }
                 return .serverError("Код ошибки: \(httpResponse.statusCode)")
             }
         } catch {
