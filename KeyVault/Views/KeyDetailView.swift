@@ -22,7 +22,7 @@ struct KeyDetailView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
             // API ключ по центру экрана
             VStack(spacing: 16) {
                 HStack(spacing: 6) {
@@ -35,15 +35,6 @@ struct KeyDetailView: View {
                             .font(.subheadline)
                             .foregroundStyle(.green)
                     }
-                }
-                
-                // Заметка (если есть)
-                if let note = apiKey.note, !note.isEmpty {
-                    Text(note)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
                 }
                 
                 Button {
@@ -75,10 +66,24 @@ struct KeyDetailView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                
             }
             .padding(.horizontal)
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Заметка вверху (если есть)
+            if let note = apiKey.note, !note.isEmpty {
+                Text(note)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+            }
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(apiKey.myName)
