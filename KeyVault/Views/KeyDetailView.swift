@@ -26,7 +26,7 @@ struct KeyDetailView: View {
             // API ключ по центру экрана
             VStack(spacing: 16) {
                 HStack(spacing: 6) {
-                    Text("Секретный Ключ")
+                    Text("Ключ")
                         .font(.headline)
                         .foregroundStyle(.secondary)
                     

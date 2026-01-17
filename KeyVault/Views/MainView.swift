@@ -10,31 +10,46 @@ import SwiftData
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \Platform.name) private var platforms: [Platform]
-    @Query private var allKeys: [APIKey] // Для отслеживания изменений в ключах
+    @Query private var allKeys: [APIKey]
     @State private var showingAddKey = false
+    @State private var appearAnimation = false
     
-    // Только платформы с ключами
     private var platformsWithKeys: [Platform] {
         platforms.filter { !$0.apiKeys.isEmpty }
     }
     
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                // Градиентный фон
+                backgroundGradient
+                    .ignoresSafeArea()
+                
                 if platformsWithKeys.isEmpty {
                     emptyStateView
                 } else {
-                    platformsList
+                    platformsGrid
                 }
             }
             .navigationTitle("API Keys")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showingAddKey = true
                     } label: {
                         Image(systemName: "plus")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(colorScheme == .dark ? .white : .black)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                 }
             }
@@ -43,15 +58,108 @@ struct MainView: View {
             }
             .onAppear {
                 cleanupEmptyPlatforms()
+                withAnimation(.easeOut(duration: 0.5)) {
+                    appearAnimation = true
+                }
             }
         }
     }
     
+    // MARK: - Background
+    private var backgroundGradient: some View {
+        LinearGradient(
+            colors: colorScheme == .dark
+                ? [Color(red: 0.05, green: 0.05, blue: 0.15),
+                   Color(red: 0.1, green: 0.08, blue: 0.2),
+                   Color.black]
+                : [Color(red: 0.95, green: 0.95, blue: 1.0),
+                   Color(red: 0.9, green: 0.92, blue: 1.0),
+                   Color(red: 0.85, green: 0.88, blue: 0.95)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    // MARK: - Platforms Grid
+    private var platformsGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(Array(platformsWithKeys.enumerated()), id: \.element.id) { index, platform in
+                    NavigationLink {
+                        destinationView(for: platform)
+                    } label: {
+                        GlassCard(platform: platform)
+                    }
+                    .buttonStyle(CardButtonStyle())
+                    .opacity(appearAnimation ? 1 : 0)
+                    .offset(y: appearAnimation ? 0 : 20)
+                    .animation(
+                        .spring(response: 0.5, dampingFraction: 0.8)
+                        .delay(Double(index) * 0.08),
+                        value: appearAnimation
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
+        }
+    }
+    
+    // MARK: - Empty State
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "key.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .symbolEffect(.pulse, options: .repeating)
+            }
+            
+            VStack(spacing: 8) {
+                Text("Нет API ключей")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.primary)
+                
+                Text("Добавьте первый ключ")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Button {
+                showingAddKey = true
+            } label: {
+                Label("Добавить ключ", systemImage: "plus")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: Capsule()
+                    )
+            }
+        }
+        .padding()
+    }
+    
     // MARK: - Cleanup
-    /// Удаляет пустые пользовательские платформы из базы данных
     private func cleanupEmptyPlatforms() {
         let emptyPlatforms = platforms.filter { platform in
-            // Удаляем только пользовательские платформы без ключей
             !platform.isDefault && platform.apiKeys.isEmpty
         }
         
@@ -59,39 +167,8 @@ struct MainView: View {
             modelContext.delete(platform)
         }
         
-        // Сохраняем изменения, если что-то удалили
         if !emptyPlatforms.isEmpty {
             try? modelContext.save()
-        }
-    }
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "key.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-            
-            Text("Нет API ключей")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("Добавьте первый ключ, нажав на +")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
-    }
-    
-    private var platformsList: some View {
-        List {
-            ForEach(platformsWithKeys) { platform in
-                NavigationLink {
-                    destinationView(for: platform)
-                } label: {
-                    PlatformRow(platform: platform)
-                }
-            }
         }
     }
     
@@ -105,27 +182,62 @@ struct MainView: View {
     }
 }
 
-// MARK: - Platform Row
-struct PlatformRow: View {
+// MARK: - Glass Card
+struct GlassCard: View {
     let platform: Platform
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        HStack(spacing: 16) {
+        VStack(spacing: 12) {
             // Иконка платформы
-            PlatformIconView(platform: platform, size: 40)
+            PlatformIconView(platform: platform, size: 56)
+                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(spacing: 4) {
                 Text(platform.name)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
                 Text("\(platform.apiKeys.count) \(keysText)")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
-            Spacer()
         }
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .padding(.horizontal, 12)
+        .background {
+            glassBackground
+        }
+    }
+    
+    private var glassBackground: some View {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(.ultraThinMaterial)
+            .overlay {
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(colorScheme == .dark ? 0.3 : 0.6),
+                                .white.opacity(colorScheme == .dark ? 0.1 : 0.2)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            }
+            .shadow(
+                color: colorScheme == .dark
+                    ? .black.opacity(0.4)
+                    : .black.opacity(0.1),
+                radius: 16,
+                x: 0,
+                y: 8
+            )
     }
     
     private var keysText: String {
@@ -137,6 +249,15 @@ struct PlatformRow: View {
         } else {
             return "ключей"
         }
+    }
+}
+
+// MARK: - Card Button Style
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
