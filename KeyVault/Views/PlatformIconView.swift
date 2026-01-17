@@ -38,10 +38,6 @@ struct PlatformIconView: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.2))
-        .overlay(
-            RoundedRectangle(cornerRadius: size * 0.2)
-                .strokeBorder(Color.primary.opacity(colorScheme == .dark ? 0.2 : 0.1), lineWidth: 1)
-        )
     }
     
     private var fallbackIcon: some View {
