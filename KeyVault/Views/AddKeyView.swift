@@ -31,7 +31,6 @@ struct AddKeyView: View {
     @State private var errorMessage: String = ""
     @State private var validationSuccess: Bool = false
     @State private var validationFailed: Bool = false
-    
     // Для загрузки иконки
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedIconData: Data?
@@ -84,7 +83,7 @@ struct AddKeyView: View {
         NavigationStack {
             Form {
                 // Выбор платформы
-                if !isEditMode {
+                if !isEditMode && preselectedPlatform == nil {
                     Section {
                         Menu {
                             Picker("Платформа", selection: $selectedPlatformName) {
@@ -156,7 +155,7 @@ struct AddKeyView: View {
                             Text("Иконка (опционально)")
                         }
                     }
-                } else {
+                } else if isEditMode {
                     Section {
                         HStack {
                             Text(editingKey?.platform?.name ?? "")

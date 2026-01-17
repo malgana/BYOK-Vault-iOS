@@ -103,17 +103,38 @@ struct KeyGlassCard: View {
     var body: some View {
         HStack(spacing: 16) {
             // Индикатор статуса
-            Circle()
-                .fill(apiKey.isValid ? Color.green : Color.gray.opacity(0.5))
-                .frame(width: 12, height: 12)
-                .shadow(color: apiKey.isValid ? .green.opacity(0.5) : .clear, radius: 4)
+            if apiKey.isAdminKey {
+                // Admin ключ — иконка шестерёнки
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.orange)
+                    .frame(width: 12, height: 12)
+            } else {
+                // Обычный ключ — круглый индикатор
+                Circle()
+                    .fill(apiKey.isValid ? Color.green : Color.gray.opacity(0.5))
+                    .frame(width: 12, height: 12)
+                    .shadow(color: apiKey.isValid ? .green.opacity(0.5) : .clear, radius: 4)
+            }
             
             // Информация о ключе
             VStack(alignment: .leading, spacing: 6) {
-                Text(apiKey.myName)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(apiKey.myName)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    
+                    if apiKey.isAdminKey {
+                        Text("Admin")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.orange.opacity(0.2), in: Capsule())
+                    }
+                }
                 
                 if let note = apiKey.note, !note.isEmpty {
                     Text(note)

@@ -14,6 +14,7 @@ struct MainView: View {
     @Query(sort: \Platform.name) private var platforms: [Platform]
     @Query private var allKeys: [APIKey]
     @State private var showingAddKey = false
+    @State private var showingSettings = false
     @State private var appearAnimation = false
     
     private var platformsWithKeys: [Platform] {
@@ -41,6 +42,18 @@ struct MainView: View {
             .navigationTitle("API Keys")
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(colorScheme == .dark ? .white : .black)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                }
+                
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showingAddKey = true
@@ -55,6 +68,9 @@ struct MainView: View {
             }
             .sheet(isPresented: $showingAddKey) {
                 AddKeyView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .onAppear {
                 cleanupEmptyPlatforms()
