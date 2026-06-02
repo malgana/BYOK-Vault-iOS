@@ -51,7 +51,6 @@ struct KeyVaultDocument: FileDocument {
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     @Query private var platforms: [Platform]
     @Query private var allKeys: [APIKey]
     
@@ -67,7 +66,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                backgroundGradient
+                KeyVaultBackground()
                     .ignoresSafeArea()
                 
                 List {
@@ -112,7 +111,7 @@ struct SettingsView: View {
                     } footer: {
                         Text("Экспорт сохраняет все ключи в зашифрованный JSON файл. Храните его в безопасном месте.")
                     }
-                    .listRowBackground(Color.clear.background(.ultraThinMaterial))
+                    .glassListRowBackground()
                     
                     // Информация
                     Section {
@@ -135,7 +134,7 @@ struct SettingsView: View {
                     } header: {
                         Text("Статистика")
                     }
-                    .listRowBackground(Color.clear.background(.ultraThinMaterial))
+                    .glassListRowBackground()
                     
                     // О приложении
                     Section {
@@ -149,12 +148,13 @@ struct SettingsView: View {
                     } header: {
                         Text("О приложении")
                     }
-                    .listRowBackground(Color.clear.background(.ultraThinMaterial))
+                    .glassListRowBackground()
                 }
                 .scrollContentBackground(.hidden)
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
+            .keyVaultNavigationStyle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Готово") {
@@ -202,21 +202,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-    
-    // MARK: - Background
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(red: 0.05, green: 0.05, blue: 0.15),
-                   Color(red: 0.1, green: 0.08, blue: 0.2),
-                   Color.black]
-                : [Color(red: 0.95, green: 0.95, blue: 1.0),
-                   Color(red: 0.9, green: 0.92, blue: 1.0),
-                   Color(red: 0.85, green: 0.88, blue: 0.95)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
     
     // MARK: - Export

@@ -10,37 +10,54 @@ import SwiftData
 
 struct PlatformKeysListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.colorScheme) private var colorScheme
     @Bindable var platform: Platform
     @State private var showingAddKey = false
     @State private var appearAnimation = false
     @State private var copiedKeyID: String?
+    @State private var expandedGroups: Set<PersistentIdentifier> = []
+    
+    // Вспомогательная структура для идентификации секций
+    private enum SectionItem: Hashable {
+        case group(PersistentIdentifier)
+        case ungrouped
+    }
+    
+    private var sections: [SectionItem] {
+        let groups = platform.groups.sorted(by: { $0.name < $1.name })
+        var items = groups.map { SectionItem.group($0.id) }
+        if !platform.apiKeys.filter({ $0.group == nil }).isEmpty {
+            items.append(.ungrouped)
+        }
+        return items
+    }
+    
+    private func keysForSection(_ section: SectionItem) -> [APIKey] {
+        switch section {
+        case .group(let id):
+            return platform.apiKeys.filter { $0.group?.id == id }
+        case .ungrouped:
+            return platform.apiKeys.filter { $0.group == nil }
+        }
+    }
     
     var body: some View {
         ZStack {
-            // Градиентный фон
-            backgroundGradient
+            KeyVaultBackground()
                 .ignoresSafeArea()
             
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    ForEach(Array(platform.apiKeys.enumerated()), id: \.element.id) { index, apiKey in
-                        NavigationLink {
-                            KeyDetailView(apiKey: apiKey)
-                        } label: {
-                            KeyGlassCard(
-                                apiKey: apiKey,
-                                copiedKeyID: $copiedKeyID
-                            )
+                    ForEach(sections, id: \.self) { section in
+                        let keys = keysForSection(section)
+                        
+                        switch section {
+                        case .group(let id):
+                            if let group = platform.groups.first(where: { $0.id == id }) {
+                                groupSection(for: group, keys: keys)
+                            }
+                        case .ungrouped:
+                            ungroupedSection(keys: keys)
                         }
-                        .buttonStyle(CardButtonStyle())
-                        .opacity(appearAnimation ? 1 : 0)
-                        .offset(y: appearAnimation ? 0 : 20)
-                        .animation(
-                            .spring(response: 0.5, dampingFraction: 0.8)
-                            .delay(Double(index) * 0.08),
-                            value: appearAnimation
-                        )
                     }
                 }
                 .padding(.horizontal, 16)
@@ -50,17 +67,13 @@ struct PlatformKeysListView: View {
         }
         .navigationTitle(platform.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .keyVaultNavigationStyle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     showingAddKey = true
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(colorScheme == .dark ? .white : .black)
-                        .frame(width: 36, height: 36)
-                        .background(.ultraThinMaterial, in: Circle())
+                    GlassCircleButton(systemName: "plus")
                 }
             }
         }
@@ -74,18 +87,101 @@ struct PlatformKeysListView: View {
         }
     }
     
-    // MARK: - Background
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(red: 0.05, green: 0.05, blue: 0.15),
-                   Color(red: 0.1, green: 0.08, blue: 0.2),
-                   Color.black]
-                : [Color(red: 0.95, green: 0.95, blue: 1.0),
-                   Color(red: 0.9, green: 0.92, blue: 1.0),
-                   Color(red: 0.85, green: 0.88, blue: 0.95)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+    private func deleteGroup(_ group: KeyGroup) {
+        withAnimation {
+            expandedGroups.remove(group.id)
+            modelContext.delete(group)
+            try? modelContext.save()
+        }
+    }
+    
+    @ViewBuilder
+    private func groupSection(for group: KeyGroup, keys: [APIKey]) -> some View {
+        DisclosureGroup(
+            isExpanded: Binding(
+                get: { expandedGroups.contains(group.id) },
+                set: { isExpanded in
+                    withAnimation(.snappy) {
+                        if isExpanded {
+                            expandedGroups.insert(group.id)
+                        } else {
+                            expandedGroups.remove(group.id)
+                        }
+                    }
+                }
+            )
+        ) {
+            VStack(spacing: 12) {
+                ForEach(Array(keys.enumerated()), id: \.element.id) { index, apiKey in
+                    keyRow(apiKey: apiKey, index: index)
+                }
+            }
+            .padding(.top, 12)
+        } label: {
+            groupHeader(group: group, count: keys.count)
+        }
+        .padding(16)
+        .background {
+            GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
+        }
+    }
+    
+    @ViewBuilder
+    private func groupHeader(group: KeyGroup, count: Int) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "folder.fill")
+                .foregroundStyle(.tint)
+                .font(.title3)
+            
+            Text(group.name)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            
+            Spacer()
+            
+            Text("\(count)")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.secondary.opacity(0.1), in: Capsule())
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button(role: .destructive) {
+                deleteGroup(group)
+            } label: {
+                Label("Удалить группу", systemImage: "trash")
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func ungroupedSection(keys: [APIKey]) -> some View {
+        VStack(spacing: 16) {
+            ForEach(Array(keys.enumerated()), id: \.element.id) { index, apiKey in
+                keyRow(apiKey: apiKey, index: index)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func keyRow(apiKey: APIKey, index: Int) -> some View {
+        NavigationLink {
+            KeyDetailView(apiKey: apiKey)
+        } label: {
+            KeyGlassCard(
+                apiKey: apiKey,
+                copiedKeyID: $copiedKeyID
+            )
+        }
+        .buttonStyle(CardButtonStyle())
+        .opacity(appearAnimation ? 1 : 0)
+        .offset(y: appearAnimation ? 0 : 20)
+        .animation(
+            .spring(response: 0.5, dampingFraction: 0.8)
+            .delay(Double(index) * 0.08),
+            value: appearAnimation
         )
     }
 }
@@ -94,7 +190,6 @@ struct PlatformKeysListView: View {
 struct KeyGlassCard: View {
     let apiKey: APIKey
     @Binding var copiedKeyID: String?
-    @Environment(\.colorScheme) private var colorScheme
     
     private var isCopied: Bool {
         copiedKeyID == apiKey.keychainID
@@ -165,35 +260,8 @@ struct KeyGlassCard: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .background {
-            glassBackground
+            GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
         }
-    }
-    
-    private var glassBackground: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(.ultraThinMaterial)
-            .overlay {
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(colorScheme == .dark ? 0.3 : 0.6),
-                                .white.opacity(colorScheme == .dark ? 0.1 : 0.2)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            }
-            .shadow(
-                color: colorScheme == .dark
-                    ? .black.opacity(0.4)
-                    : .black.opacity(0.1),
-                radius: 12,
-                x: 0,
-                y: 6
-            )
     }
     
     private var formattedDate: String {

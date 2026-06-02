@@ -25,6 +25,8 @@ struct AddKeyView: View {
     @State private var apiKeyValue: String = ""
     @State private var note: String = ""
     @State private var selectedPlatformName: String = ""
+    @State private var selectedGroupName: String = "No Group"
+    @State private var customGroupName: String = ""
     @State private var customPlatformName: String = ""
     @State private var isValidating: Bool = false
     @State private var showingError: Bool = false
@@ -81,171 +83,15 @@ struct AddKeyView: View {
     
     var body: some View {
         NavigationStack {
-            Form {
-                // Выбор платформы
-                if !isEditMode && preselectedPlatform == nil {
-                    Section {
-                        Menu {
-                            Picker("Платформа", selection: $selectedPlatformName) {
-                                ForEach(availablePlatforms, id: \.self) { platform in
-                                    if platform == "New" {
-                                        Text("NEW")
-                                            .foregroundStyle(.tint)
-                                            .tag(platform)
-                                    } else {
-                                        Text(platform).tag(platform)
-                                    }
-                                }
-                            }
-                            .pickerStyle(.inline)
-                            .labelsHidden()
-                        } label: {
-                            HStack {
-                                Text(selectedPlatformName.isEmpty ? "Выберите платформу" : selectedPlatformName)
-                                    .foregroundStyle(selectedPlatformName.isEmpty ? .secondary : .primary)
-                                Spacer()
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        
-                        // Поле для новой платформы
-                        if selectedPlatformName == "New" {
-                            TextField("Название платформы", text: $customPlatformName)
-                                .autocorrectionDisabled()
-                        }
-                    } header: {
-                        Text("Платформа")
-                    }
-                    
-                    // Загрузка иконки для новой платформы
-                    if selectedPlatformName == "New" && !customPlatformName.isEmpty {
-                        Section {
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                HStack {
-                                    if let image = selectedIconImage {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 50, height: 50)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    } else {
-                                        Image(systemName: "photo.badge.plus")
-                                            .font(.title2)
-                                            .foregroundStyle(.blue)
-                                            .frame(width: 50, height: 50)
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(selectedIconImage == nil ? "Добавить иконку" : "Изменить иконку")
-                                            .foregroundStyle(.primary)
-                                        Text("Рекомендуемый размер: 250×250px")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        } header: {
-                            Text("Иконка (опционально)")
-                        }
-                    }
-                } else if isEditMode {
-                    Section {
-                        HStack {
-                            Text(editingKey?.platform?.name ?? "")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                        }
-                    }
-                }
-                
-                // Название ключа
-                Section {
-                    TextField("Название ключа", text: $myName)
-                        .autocorrectionDisabled()
-                } header: {
-                    Text("Название")
-                }
-                
-                // Заметка (опционально)
-                Section {
-                    TextField("Добавить заметку...", text: $note, axis: .vertical)
-                        .lineLimit(3...6)
-                        .autocorrectionDisabled()
-                } header: {
-                    Text("Заметка (опционально)")
-                }
-                
-                // API ключ
-                Section {
-                    Button {
-                        if let clipboardText = UIPasteboard.general.string {
-                            var transaction = Transaction()
-                            transaction.disablesAnimations = true
-                            withTransaction(transaction) {
-                                apiKeyValue = clipboardText
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            if apiKeyValue.isEmpty {
-                                Text("Нажмите чтобы вставить ключ")
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Text(apiKeyValue)
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundStyle(.primary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            
-                            Spacer()
-                            
-                            if apiKeyValue.isEmpty {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.title3)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .frame(minHeight: 60, alignment: .topLeading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                // Кнопка сохранения/проверки
-                Section {
-                    Button {
-                        validateAndSave()
-                    } label: {
-                        HStack {
-                            if isValidating {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else if validationSuccess {
-                                Image(systemName: "checkmark")
-                            }
-                            Text(buttonText)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .foregroundStyle(validationSuccess ? .white : .green)
-                    }
-                    .listRowBackground(validationSuccess ? Color.green : Color(uiColor: .secondarySystemGroupedBackground))
-                    .disabled(!isFormValid || isValidating || validationSuccess)
-                } footer: {
-                    // Текст статуса валидации (всегда занимает место)
-                    Text(validationFailed ? "Проверка не пройдена" : " ")
-                        .foregroundStyle(.red)
-                }
+            ZStack {
+                KeyVaultBackground()
+                    .ignoresSafeArea()
+
+                addKeyForm
             }
-            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditMode ? "Редактировать ключ" : "Новый ключ")
             .navigationBarTitleDisplayMode(.inline)
+            .keyVaultNavigationStyle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") {
@@ -266,10 +112,238 @@ struct AddKeyView: View {
                     await loadSelectedPhoto()
                 }
             }
-        .tint(.green)
+            .tint(.green)
         }
     }
-    
+
+    private var addKeyForm: some View {
+        Form {
+            platformSections
+            nameSection
+            noteSection
+            groupSection
+            apiKeySection
+            saveSection
+        }
+        .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    @ViewBuilder
+    private var platformSections: some View {
+        if !isEditMode && preselectedPlatform == nil {
+            Section {
+                Menu {
+                    Picker("Платформа", selection: $selectedPlatformName) {
+                        ForEach(availablePlatforms, id: \.self) { platform in
+                            if platform == "New" {
+                                Text("NEW")
+                                    .foregroundStyle(.tint)
+                                    .tag(platform)
+                            } else {
+                                Text(platform).tag(platform)
+                            }
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } label: {
+                    HStack {
+                        Text(selectedPlatformName.isEmpty ? "Выберите платформу" : selectedPlatformName)
+                            .foregroundStyle(selectedPlatformName.isEmpty ? .secondary : .primary)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+
+                if selectedPlatformName == "New" {
+                    TextField("Название платформы", text: $customPlatformName)
+                        .autocorrectionDisabled()
+                }
+            } header: {
+                Text("Платформа")
+            }
+            .glassListRowBackground()
+
+            if selectedPlatformName == "New" && !customPlatformName.isEmpty {
+                Section {
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        HStack {
+                            if let image = selectedIconImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            } else {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.title2)
+                                    .foregroundStyle(.blue)
+                                    .frame(width: 50, height: 50)
+                            }
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(selectedIconImage == nil ? "Добавить иконку" : "Изменить иконку")
+                                    .foregroundStyle(.primary)
+                                Text("Рекомендуемый размер: 250×250px")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                } header: {
+                    Text("Иконка (опционально)")
+                }
+                .glassListRowBackground()
+            }
+        } else if isEditMode {
+            Section {
+                HStack {
+                    Text(editingKey?.platform?.name ?? "")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+            }
+            .glassListRowBackground()
+        }
+    }
+
+    private var nameSection: some View {
+        Section {
+            TextField("Название ключа", text: $myName)
+                .autocorrectionDisabled()
+        } header: {
+            Text("Название")
+        }
+        .glassListRowBackground()
+    }
+
+    private var noteSection: some View {
+        Section {
+            TextField("Добавить заметку...", text: $note, axis: .vertical)
+                .lineLimit(3...6)
+                .autocorrectionDisabled()
+        } header: {
+            Text("Заметка (опционально)")
+        }
+        .glassListRowBackground()
+    }
+
+    private var groupSection: some View {
+        Section {
+            Menu {
+                Picker("Группа", selection: $selectedGroupName) {
+                    Text("Без группы").tag("No Group")
+
+                    let platformGroups = platforms.first(where: { $0.name == finalPlatformName })?.groups ?? []
+                    ForEach(platformGroups) { group in
+                        Text(group.name).tag(group.name)
+                    }
+
+                    Divider()
+                    Text("Новая группа...").tag("New Group")
+                }
+            } label: {
+                HStack {
+                    Text(selectedGroupName == "No Group" ? "Без группы" : (selectedGroupName == "New Group" ? "Новая группа" : selectedGroupName))
+                        .foregroundStyle(selectedGroupName == "No Group" ? .secondary : .primary)
+                    Spacer()
+                    Image(systemName: "folder")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if selectedGroupName == "New Group" {
+                TextField("Название группы", text: $customGroupName)
+                    .autocorrectionDisabled()
+            }
+        } header: {
+            Text("Группа (опционально)")
+        }
+        .glassListRowBackground()
+    }
+
+    private var apiKeySection: some View {
+        Section {
+            Button {
+                if let clipboardText = UIPasteboard.general.string {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        apiKeyValue = clipboardText
+                    }
+                }
+            } label: {
+                HStack {
+                    if apiKeyValue.isEmpty {
+                        Text("Нажмите чтобы вставить ключ")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(apiKeyValue)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.leading)
+                    }
+
+                    Spacer()
+
+                    if apiKeyValue.isEmpty {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(minHeight: 60, alignment: .topLeading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .glassListRowBackground()
+    }
+
+    private var saveSection: some View {
+        Section {
+            Button {
+                validateAndSave()
+            } label: {
+                HStack {
+                    if isValidating {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else if validationSuccess {
+                        Image(systemName: "checkmark")
+                    }
+                    Text(buttonText)
+                }
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(validationSuccess ? .white : .green)
+            }
+            .listRowBackground(saveButtonBackground)
+            .disabled(!isFormValid || isValidating || validationSuccess)
+        } footer: {
+            Text(validationFailed ? "Проверка не пройдена" : " ")
+                .foregroundStyle(.red)
+        }
+    }
+
+    @ViewBuilder
+    private var saveButtonBackground: some View {
+        if validationSuccess {
+            RoundedRectangle(cornerRadius: 12).fill(.green)
+        } else {
+            Color.clear.background {
+                GlassBackground(cornerRadius: 12, shadowRadius: 8, shadowY: 4)
+            }
+        }
+    }
+
     private func setupInitialValues() {
         if let editingKey = editingKey {
             // Режим редактирования
@@ -277,6 +351,7 @@ struct AddKeyView: View {
             note = editingKey.note ?? ""
             apiKeyValue = KeychainService.shared.get(for: editingKey.keychainID) ?? ""
             selectedPlatformName = editingKey.platform?.name ?? ""
+            selectedGroupName = editingKey.group?.name ?? "No Group"
         } else if let preselectedPlatform = preselectedPlatform {
             // Предвыбранная платформа
             selectedPlatformName = preselectedPlatform.name
@@ -490,9 +565,21 @@ struct AddKeyView: View {
             modelContext.insert(platform)
         }
         
+        // Находим или создаем группу
+        var targetGroup: KeyGroup? = nil
+        if selectedGroupName == "New Group" {
+            let groupName = customGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !groupName.isEmpty {
+                targetGroup = KeyGroup(name: groupName, platform: platform)
+                modelContext.insert(targetGroup!)
+            }
+        } else if selectedGroupName != "No Group" {
+            targetGroup = platform.groups.first(where: { $0.name == selectedGroupName })
+        }
+        
         // Создаем новый ключ с заметкой
         let noteValue = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newKey = APIKey(myName: myName, platform: platform, note: noteValue.isEmpty ? nil : noteValue)
+        let newKey = APIKey(myName: myName, platform: platform, note: noteValue.isEmpty ? nil : noteValue, group: targetGroup)
         newKey.isValid = isValid
         
         // Сохраняем API ключ в Keychain
@@ -522,6 +609,20 @@ struct AddKeyView: View {
         // Обновляем заметку
         let noteValue = note.trimmingCharacters(in: .whitespacesAndNewlines)
         editingKey.note = noteValue.isEmpty ? nil : noteValue
+        
+        // Обновляем группу
+        if selectedGroupName == "New Group" {
+            let groupName = customGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !groupName.isEmpty {
+                let newGroup = KeyGroup(name: groupName, platform: editingKey.platform)
+                modelContext.insert(newGroup)
+                editingKey.group = newGroup
+            }
+        } else if selectedGroupName == "No Group" {
+            editingKey.group = nil
+        } else {
+            editingKey.group = editingKey.platform?.groups.first(where: { $0.name == selectedGroupName })
+        }
         
         // Обновляем ключ в Keychain если изменился
         let currentKey = KeychainService.shared.get(for: editingKey.keychainID) ?? ""

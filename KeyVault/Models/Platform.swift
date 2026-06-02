@@ -18,6 +18,9 @@ final class Platform {
     @Relationship(deleteRule: .cascade, inverse: \APIKey.platform)
     var apiKeys: [APIKey] = []
     
+    @Relationship(deleteRule: .cascade, inverse: \KeyGroup.platform)
+    var groups: [KeyGroup] = []
+    
     init(name: String, customIconData: Data? = nil) {
         self.name = name
         self.dateCreated = Date()

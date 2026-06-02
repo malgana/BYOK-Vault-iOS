@@ -20,7 +20,9 @@ final class APIKey {
     @Relationship
     var platform: Platform?
     
-    init(myName: String, platform: Platform, note: String? = nil, isAdminKey: Bool = false) {
+    var group: KeyGroup?
+    
+    init(myName: String, platform: Platform, note: String? = nil, isAdminKey: Bool = false, group: KeyGroup? = nil) {
         self.myName = myName
         self.platform = platform
         self.keychainID = UUID().uuidString
@@ -28,5 +30,6 @@ final class APIKey {
         self.isValid = false
         self.note = note
         self.isAdminKey = isAdminKey
+        self.group = group
     }
 }

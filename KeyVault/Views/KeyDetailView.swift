@@ -12,86 +12,85 @@ struct KeyDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var apiKey: APIKey
-    
+
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showCopiedMessage = false
-    
+
     private var apiKeyValue: String {
         KeychainService.shared.get(for: apiKey.keychainID) ?? "Ошибка загрузки ключа"
     }
-    
+
+    private var hasNote: Bool {
+        guard let note = apiKey.note else { return false }
+        return !note.isEmpty
+    }
+
     var body: some View {
-        ZStack(alignment: .top) {
-            // API ключ по центру экрана
-            VStack(spacing: 16) {
-                HStack(spacing: 6) {
-                    Text("Ключ")
-                        .font(.headline)
+        ZStack {
+            KeyVaultBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                if hasNote, let note = apiKey.note {
+                    Text(note)
+                        .font(.body)
                         .foregroundStyle(.secondary)
-                    
-                    if apiKey.isValid {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(.green)
-                    }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
                 }
-                
-                Button {
-                    copyToClipboard()
-                } label: {
-                    ScrollView {
-                        Text(apiKeyValue)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .padding(20)
-                    .frame(maxWidth: .infinity)
-                    .frame(maxHeight: 300)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .top) {
-                    if showCopiedMessage {
-                        HStack(spacing: 6) {
+
+                Spacer()
+
+                VStack(spacing: 16) {
+                    HStack(spacing: 6) {
+                        Text("Ключ")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+
+                        if apiKey.isValid {
                             Image(systemName: "checkmark.circle.fill")
-                            Text("Скопировано")
+                                .font(.subheadline)
+                                .foregroundStyle(.green)
                         }
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.green)
-                        .clipShape(Capsule())
-                        .offset(y: -50)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+
+                    Button {
+                        copyToClipboard()
+                    } label: {
+                        ScrollView {
+                            Text(apiKeyValue)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .padding(20)
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: 300)
+                        .background {
+                            GlassBackground(cornerRadius: 16)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .overlay(alignment: .top) {
+                        if showCopiedMessage {
+                            copiedToast
+                                .offset(y: -50)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                        }
                     }
                 }
-            }
-            .padding(.horizontal)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Заметка вверху (если есть)
-            if let note = apiKey.note, !note.isEmpty {
-                Text(note)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
-                    .padding(.top, 16)
+                .padding(.horizontal)
+
+                Spacer()
             }
         }
-        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(apiKey.myName)
         .navigationBarTitleDisplayMode(.inline)
+        .keyVaultNavigationStyle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -100,16 +99,16 @@ struct KeyDetailView: View {
                     } label: {
                         Label("Редактировать", systemImage: "pencil")
                     }
-                    
+
                     Divider()
-                    
+
                     Button(role: .destructive) {
                         showingDeleteAlert = true
                     } label: {
                         Label("Удалить ключ", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    GlassCircleButton(systemName: "ellipsis.circle")
                 }
             }
         }
@@ -125,38 +124,52 @@ struct KeyDetailView: View {
             Text("Это действие нельзя отменить. Ключ будет удален из приложения и Keychain.")
         }
     }
-    
+
+    private var copiedToast: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+            Text("Скопировано")
+        }
+        .font(.subheadline)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(.green.opacity(0.85), in: Capsule())
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+        }
+        .overlay {
+            Capsule()
+                .stroke(.white.opacity(0.3), lineWidth: 1)
+        }
+    }
+
     private func copyToClipboard() {
         UIPasteboard.general.string = apiKeyValue
-        
+
         withAnimation {
             showCopiedMessage = true
         }
-        
-        // Скрываем сообщение через 2 секунды
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation {
                 showCopiedMessage = false
             }
         }
     }
-    
+
     private func deleteKey() {
-        // Сохраняем ссылку на платформу и проверяем количество ключей ДО удаления
         let platform = apiKey.platform
         let isLastKey = platform?.apiKeys.count == 1
-        
-        // Удаляем из Keychain
+
         _ = KeychainService.shared.delete(for: apiKey.keychainID)
-        
-        // Удаляем из базы данных
         modelContext.delete(apiKey)
-        
-        // Если это был последний ключ платформы - удаляем и платформу
+
         if let platform = platform, isLastKey {
             modelContext.delete(platform)
         }
-        
+
         dismiss()
     }
 }
@@ -164,17 +177,16 @@ struct KeyDetailView: View {
 #Preview("С заметкой") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
-    
-    let platform = Platform(name: "Anthropic")
-    let key = APIKey(myName: "Рабочий ключ", platform: platform, note: "Мой рабочий ключ для тестирования API")
+
+    let platform = Platform(name: "Paddle")
+    let key = APIKey(myName: "Client-side token", platform: platform, note: "Wow image")
     key.isValid = true
-    
+
     container.mainContext.insert(platform)
     container.mainContext.insert(key)
-    
-    // Сохраняем тестовый ключ в Keychain
-    _ = KeychainService.shared.save(key: "sk-ant-test-key-123456789", for: key.keychainID)
-    
+
+    _ = KeychainService.shared.save(key: "test_178c92ee11d9285a0691407332d", for: key.keychainID)
+
     return NavigationStack {
         KeyDetailView(apiKey: key)
             .modelContainer(container)
@@ -184,17 +196,16 @@ struct KeyDetailView: View {
 #Preview("Без заметки") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
-    
+
     let platform = Platform(name: "OpenAI")
     let key = APIKey(myName: "Личный ключ", platform: platform)
     key.isValid = true
-    
+
     container.mainContext.insert(platform)
     container.mainContext.insert(key)
-    
-    // Сохраняем тестовый ключ в Keychain
+
     _ = KeychainService.shared.save(key: "sk-test-123", for: key.keychainID)
-    
+
     return NavigationStack {
         KeyDetailView(apiKey: key)
             .modelContainer(container)
