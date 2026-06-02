@@ -142,15 +142,17 @@ No API keys or environment variables are required to build. Your own keys are en
 
 ## Screenshots
 
-<!-- Add when ready:
 <p align="center">
-  <img src="screenshots/main.png" width="250" alt="Main screen" />
-  <img src="screenshots/add_key.png" width="250" alt="Add key" />
-  <img src="screenshots/detail.png" width="250" alt="Key detail" />
+  <img src="screenshots/main.png" width="220" alt="Main screen — platform grid" />
+  <img src="screenshots/platform_keys.png" width="220" alt="Keys list for a platform" />
+  <img src="screenshots/add_key.png" width="220" alt="Add new key" />
 </p>
--->
+<p align="center">
+  <img src="screenshots/settings.png" width="220" alt="Settings — export and import" />
+  <img src="screenshots/dashboard_link.png" width="220" alt="Claude console opened from in-app Dashboard link" />
+</p>
 
-_Screenshots coming soon._
+*Dashboard link on the platform screen opens the provider console in Safari (example: Claude).*
 
 ---
 
