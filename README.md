@@ -164,12 +164,6 @@ Copyright (c) 2025 Aleksandr Prostetsov
 
 ---
 
-## Related projects
-
-- [BYOK Vault Android](https://github.com/malgana/byok-vault-android) — Kotlin + Jetpack Compose
-
----
-
 ## Author
 
 **Aleksandr Prostetsov**
