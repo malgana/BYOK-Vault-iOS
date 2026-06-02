@@ -10,9 +10,7 @@ import SwiftUI
 struct PlatformIconView: View {
     let platform: Platform
     let size: CGFloat
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
+
     init(platform: Platform, size: CGFloat = 40) {
         self.platform = platform
         self.size = size

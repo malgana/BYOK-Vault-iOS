@@ -8,21 +8,13 @@ import SwiftUI
 // MARK: - Background
 
 struct KeyVaultBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         LinearGradient(
-            colors: colorScheme == .dark
-                ? [
-                    Color(red: 0.05, green: 0.05, blue: 0.15),
-                    Color(red: 0.1, green: 0.08, blue: 0.2),
-                    Color.black
-                ]
-                : [
-                    Color(red: 0.95, green: 0.95, blue: 1.0),
-                    Color(red: 0.9, green: 0.92, blue: 1.0),
-                    Color(red: 0.85, green: 0.88, blue: 0.95)
-                ],
+            colors: [
+                Color(red: 0.05, green: 0.05, blue: 0.15),
+                Color(red: 0.1, green: 0.08, blue: 0.2),
+                Color.black
+            ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -32,8 +24,6 @@ struct KeyVaultBackground: View {
 // MARK: - Glass Surface
 
 struct GlassBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var cornerRadius: CGFloat = 20
     var shadowRadius: CGFloat = 16
     var shadowY: CGFloat = 8
@@ -46,8 +36,8 @@ struct GlassBackground: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                .white.opacity(colorScheme == .dark ? 0.3 : 0.6),
-                                .white.opacity(colorScheme == .dark ? 0.1 : 0.2)
+                                .white.opacity(0.3),
+                                .white.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -56,9 +46,7 @@ struct GlassBackground: View {
                     )
             }
             .shadow(
-                color: colorScheme == .dark
-                    ? .black.opacity(0.4)
-                    : .black.opacity(0.1),
+                color: .black.opacity(0.4),
                 radius: shadowRadius,
                 x: 0,
                 y: shadowY
@@ -69,14 +57,12 @@ struct GlassBackground: View {
 // MARK: - Toolbar Button
 
 struct GlassCircleButton: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     let systemName: String
 
     var body: some View {
         Image(systemName: systemName)
             .font(.title3.weight(.semibold))
-            .foregroundStyle(colorScheme == .dark ? .white : .black)
+            .foregroundStyle(.white)
             .frame(width: 36, height: 36)
             .contentShape(Circle())
     }

@@ -1,166 +1,174 @@
-# 🔐 BYOK Vault — iOS
+# BYOK Vault — iOS
 
-**Bring Your Own Key** — безопасное хранилище API-ключей для iOS.
+**Bring Your Own Key** — a secure API key manager for iPhone.
 
-Храните API-ключи от AI-сервисов (OpenAI, Anthropic, Gemini и др.) в одном защищённом месте с использованием iOS Keychain.
+Store API keys for AI and developer services (OpenAI, Anthropic, Gemini, and more) in one place. Secret values live in the **iOS Keychain**; metadata stays in **SwiftData**.
 
----
-
-## ✨ Возможности
-
-- 🔒 **Безопасное хранение** — ключи хранятся в iOS Keychain
-- 🏷️ **Организация по платформам** — группировка ключей по сервисам
-- 🎨 **Кастомные платформы** — добавляйте свои сервисы с иконками
-- 📋 **Быстрая вставка** — вставка ключа из буфера обмена в один тап
-- 🔍 **Проверка дубликатов** — защита от случайного добавления одинаковых ключей
-- 📝 **Заметки** — добавляйте описания к ключам
-- ✅ **Валидация ключей** — проверка работоспособности API-ключей
-
-## 🎯 Поддерживаемые платформы
-
-Встроенные иконки для популярных AI-сервисов:
-
-| Платформа | Иконка |
-|-----------|--------|
-| Claude | ✅ |
-| GPT | ✅ |
-| Gemini | ✅ |
-| Grok | ✅ |
-| DeepSeek | ✅ |
-| Qwen | ✅ |
-| Hailuo | ✅ |
-| Meta Muse-Spark | ✅ |
-| Reve AI | ✅ |
-| GitHub | ✅ |
-| Google Image Search | ✅ |
-
-> Можно добавить любую платформу с кастомной иконкой
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-iOS%2026+-blue" alt="iOS 26+" />
+  <img src="https://img.shields.io/badge/Swift-5.9+-orange" alt="Swift 5.9+" />
+  <img src="https://img.shields.io/badge/UI-SwiftUI-purple" alt="SwiftUI" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
+</p>
 
 ---
 
-## 🏗️ Архитектура
+## Features
+
+- **Keychain-backed secrets** — API key values never stored in SwiftData
+- **Platform organization** — group keys by provider (built-in or custom)
+- **Key groups** — optional folders per platform
+- **Custom platforms** — add any service with your own icon (250×250 recommended)
+- **One-tap paste** — insert a key from the clipboard when adding
+- **Duplicate detection** — blocks saving the same key value twice
+- **Notes** — optional description per key
+- **Live validation** — optional check against provider APIs (Claude, GPT, Gemini, DeepSeek, Hailuo)
+- **Dashboard links** — quick open to provider consoles (built-in URLs + custom)
+- **Backup** — export/import vault as encrypted JSON (Settings)
+- **Localization** — English and Russian (follows system language)
+- **Dark UI only** — fixed dark theme with glass-style surfaces
+
+---
+
+## Built-in platforms
+
+Preset icons and default dashboard URLs:
+
+| Platform | Icon | API validation |
+|----------|:----:|:----------------:|
+| Claude | ✅ | ✅ |
+| GPT (OpenAI) | ✅ | ✅ |
+| Gemini | ✅ | ✅ |
+| DeepSeek | ✅ | ✅ |
+| Hailuo (MiniMax) | ✅ | ✅ |
+| Grok | ✅ | — |
+| Qwen | ✅ | — |
+| Meta Muse-Spark | ✅ | — |
+| Reve AI | ✅ | — |
+| GitHub | ✅ | — |
+| Google Image Search | ✅ | — |
+
+You can add any other platform with a custom name and icon. Platform **names** are not translated (e.g. `Claude`, `GPT` stay as-is).
+
+---
+
+## Architecture
 
 ```
 KeyVault/
 ├── Models/
-│   ├── APIKey.swift       # SwiftData модель ключа
-│   └── Platform.swift     # SwiftData модель платформы
+│   ├── APIKey.swift          # SwiftData key metadata
+│   ├── Platform.swift        # Provider + dashboard URL
+│   └── KeyGroup.swift        # Optional groups per platform
 ├── Views/
-│   ├── MainView.swift           # Главный экран со списком платформ
-│   ├── AddKeyView.swift         # Добавление/редактирование ключа
-│   ├── KeyDetailView.swift      # Детали ключа
-│   ├── PlatformKeysListView.swift # Список ключей платформы
-│   └── PlatformIconView.swift   # Компонент иконки платформы
+│   ├── MainView.swift        # Platform grid
+│   ├── PlatformKeysListView.swift
+│   ├── KeyDetailView.swift
+│   ├── AddKeyView.swift
+│   ├── SettingsView.swift    # Export / import / stats
+│   ├── DashboardLinkView.swift
+│   └── PlatformIconView.swift
 ├── Services/
-│   ├── KeychainService.swift    # Работа с iOS Keychain
-│   ├── AnthropicService.swift   # Валидация ключей Anthropic
-│   └── ImageHelper.swift        # Утилиты для работы с изображениями
-└── Assets.xcassets/             # Иконки платформ
+│   ├── KeychainService.swift
+│   ├── AnthropicService.swift
+│   ├── OpenAIService.swift
+│   ├── GeminiService.swift
+│   ├── DeepSeekService.swift
+│   ├── HailuoService.swift
+│   └── ImageHelper.swift
+├── Design/
+│   └── MaterialTheme.swift   # Background, glass surfaces
+├── Localizable.xcstrings     # EN (source) + RU
+└── Assets.xcassets/          # Platform icons
 ```
 
-### Безопасность
+### Security model
 
-Приложение использует двухуровневую архитектуру хранения:
+Two layers:
 
-1. **SwiftData** — хранит только метаданные (название, платформа, дата)
-2. **iOS Keychain** — хранит сами значения ключей с системным шифрованием
+1. **SwiftData** — names, platform, notes, validation flag, dates (no secret values)
+2. **Keychain** — actual key strings, keyed by per-entry UUID
 
 ```swift
 @Model
 final class APIKey {
-    var myName: String        // Название ключа
-    var keychainID: String    // UUID для доступа к значению в Keychain
+    var myName: String
+    var keychainID: String    // UUID for Keychain lookup
     var platform: Platform?
-    // Сам ключ никогда не хранится в базе данных!
+    // The secret is never stored in the database.
 }
 ```
 
----
-
-## 🛠️ Технологии
-
-| Категория | Технология |
-|-----------|------------|
-| **Язык** | Swift 5.9+ |
-| **UI** | SwiftUI |
-| **Данные** | SwiftData |
-| **Безопасность** | iOS Keychain (Security framework) |
-| **Min iOS** | 17.0 |
+Export JSON includes key values — treat backup files as sensitive.
 
 ---
 
-## 🚀 Запуск проекта
+## Tech stack
 
-### Требования
+| Area | Technology |
+|------|------------|
+| Language | Swift 5 |
+| UI | SwiftUI (iOS 26) |
+| Persistence | SwiftData |
+| Secrets | Security / Keychain |
+| Localization | String Catalog (`Localizable.xcstrings`) |
+| Min deployment | iOS 26.0 |
 
-- Xcode 15.0+
-- iOS 17.0+
-- macOS Sonoma 14.0+
+---
 
-### Сборка
+## Getting started
+
+### Requirements
+
+- Xcode 26+
+- iOS 26+ device or simulator
+- macOS compatible with Xcode 26
+
+### Build and run
 
 ```bash
-# Клонировать репозиторий
-git clone https://github.com/malgana/byok-vault-ios.git
-
-# Открыть в Xcode
+git clone https://github.com/malgana/BYOK-Vault-iOS.git
+cd BYOK-Vault-iOS
 open KeyVault.xcodeproj
-
-# Собрать и запустить (⌘R)
 ```
+
+Then build and run in Xcode (**⌘R**).
+
+### Configuration
+
+No API keys or environment variables are required to build. Your own keys are entered inside the app after install.
 
 ---
 
-## 📱 Скриншоты
+## Screenshots
 
-<!-- Добавьте скриншоты приложения -->
-<!-- 
+<!-- Add when ready:
 <p align="center">
-  <img src="screenshots/main.png" width="250" />
-  <img src="screenshots/add_key.png" width="250" />
-  <img src="screenshots/key_detail.png" width="250" />
+  <img src="screenshots/main.png" width="250" alt="Main screen" />
+  <img src="screenshots/add_key.png" width="250" alt="Add key" />
+  <img src="screenshots/detail.png" width="250" alt="Key detail" />
 </p>
 -->
 
-*Скриншоты будут добавлены позже*
+_Screenshots coming soon._
 
 ---
 
-## 📄 Лицензия
+## License
 
-```
-MIT License
+MIT — see [LICENSE](LICENSE).
 
 Copyright (c) 2025 Aleksandr Prostetsov
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+---
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Related projects
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+- [BYOK Vault Android](https://github.com/malgana/byok-vault-android) — Kotlin + Jetpack Compose
 
 ---
 
-## 🔗 Связанные проекты
-
-- [BYOK Vault Android](https://github.com/malgana/byok-vault-android) — версия для Android (Kotlin + Jetpack Compose)
-
----
-
-## 👤 Автор
+## Author
 
 **Aleksandr Prostetsov**
 
