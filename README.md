@@ -138,6 +138,34 @@ Then build and run in Xcode (**⌘R**).
 
 No API keys or environment variables are required to build. Your own keys are entered inside the app after install.
 
+### For contributors
+
+Anyone can clone and run this project in their own Xcode. There are no external dependencies (no SPM packages, no CocoaPods, no `.env` files).
+
+**After cloning:**
+
+1. Open `KeyVault.xcodeproj` in **Xcode 26+**.
+2. Select the **KeyVault** target → **Signing & Capabilities**.
+3. Enable **Automatically manage signing** and choose your **Apple ID / Development Team**.  
+   The repo ships with the author's team ID — you must replace it with your own.
+4. If Xcode reports a Bundle ID conflict (common on a physical device), change **Bundle Identifier** to something unique, e.g. `com.yourname.KeyVault`.
+5. Choose an **iOS 26+** simulator or a connected iPhone, then press **⌘R**.
+
+**Simulator vs device**
+
+| Target | What you need |
+|--------|----------------|
+| **Simulator** | Xcode 26+ and a free Apple ID are usually enough |
+| **Physical iPhone** | Apple ID required; some capabilities may need a paid [Apple Developer Program](https://developer.apple.com/programs/) membership |
+
+**What you do not need**
+
+- API keys or secrets to build the app
+- Additional package installs or setup scripts
+- Access to the author's Apple Developer account
+
+Your API keys are entered inside the app after install — they are stored locally in the iOS Keychain on your device.
+
 ---
 
 ## Screenshots
