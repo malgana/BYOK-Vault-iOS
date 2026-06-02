@@ -71,15 +71,15 @@ struct AddKeyView: View {
     
     private var buttonText: String {
         if isEditMode {
-            return "Сохранить изменения"
+            return String(localized: "Save Changes")
         }
         if validationSuccess {
-            return "Ключ работает"
+            return String(localized: "Key works")
         }
         if validationFailed {
-            return "Сохранить ключ"
+            return String(localized: "Save Key")
         }
-        return supportsValidation ? "Проверить" : "Сохранить ключ"
+        return supportsValidation ? String(localized: "Verify") : String(localized: "Save Key")
     }
     
     var body: some View {
@@ -90,17 +90,17 @@ struct AddKeyView: View {
 
                 addKeyForm
             }
-            .navigationTitle(isEditMode ? "Редактировать ключ" : "Новый ключ")
+            .navigationTitle(isEditMode ? "Edit Key" : "New Key")
             .navigationBarTitleDisplayMode(.inline)
             .keyVaultNavigationStyle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
             }
-            .alert("Ошибка", isPresented: $showingError) {
+            .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(errorMessage)
@@ -140,7 +140,7 @@ struct AddKeyView: View {
         if !isEditMode && preselectedPlatform == nil {
             Section {
                 Menu {
-                    Picker("Платформа", selection: $selectedPlatformName) {
+                    Picker("Platform", selection: $selectedPlatformName) {
                         ForEach(availablePlatforms, id: \.self) { platform in
                             if platform == "New" {
                                 Label {
@@ -167,7 +167,7 @@ struct AddKeyView: View {
                         if !selectedPlatformName.isEmpty, selectedPlatformName != "New" {
                             platformPickerIcon(for: selectedPlatformName)
                         }
-                        Text(selectedPlatformName.isEmpty ? "Выберите платформу" : selectedPlatformName)
+                        Text(selectedPlatformName.isEmpty ? String(localized: "Select platform") : selectedPlatformName)
                             .foregroundStyle(selectedPlatformName.isEmpty ? .secondary : .primary)
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
@@ -178,11 +178,11 @@ struct AddKeyView: View {
                 }
 
                 if selectedPlatformName == "New" {
-                    TextField("Название платформы", text: $customPlatformName)
+                    TextField("Platform name", text: $customPlatformName)
                         .autocorrectionDisabled()
                 }
             } header: {
-                Text("Платформа")
+                Text("Platform")
             }
             .glassListRowBackground()
 
@@ -199,7 +199,7 @@ struct AddKeyView: View {
 
             if selectedPlatformName == "New" && !customPlatformName.isEmpty {
                 Section {
-                    TextField("Ссылка на личный кабинет", text: $customDashboardURL)
+                    TextField("Dashboard URL", text: $customDashboardURL)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
@@ -210,9 +210,9 @@ struct AddKeyView: View {
                             .padding(.vertical, 4)
                     }
                 } header: {
-                    Text("Личный кабинет (опционально)")
+                    Text("Dashboard (optional)")
                 } footer: {
-                    Text("Например: https://console.example.com/api-keys")
+                    Text("For example: https://console.example.com/api-keys")
                 }
                 .glassListRowBackground()
 
@@ -233,9 +233,9 @@ struct AddKeyView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(selectedIconImage == nil ? "Добавить иконку" : "Изменить иконку")
+                                Text(selectedIconImage == nil ? String(localized: "Add icon") : String(localized: "Change icon"))
                                     .foregroundStyle(.primary)
-                                Text("Рекомендуемый размер: 250×250px")
+                                Text("Recommended size: 250×250px")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -246,7 +246,7 @@ struct AddKeyView: View {
                     }
                     .buttonStyle(.plain)
                 } header: {
-                    Text("Иконка (опционально)")
+                    Text("Icon (optional)")
                 }
                 .glassListRowBackground()
             }
@@ -264,21 +264,21 @@ struct AddKeyView: View {
 
     private var nameSection: some View {
         Section {
-            TextField("Название ключа", text: $myName)
+            TextField("Key name", text: $myName)
                 .autocorrectionDisabled()
         } header: {
-            Text("Название")
+            Text("Name")
         }
         .glassListRowBackground()
     }
 
     private var noteSection: some View {
         Section {
-            TextField("Добавить заметку...", text: $note, axis: .vertical)
+            TextField("Add a note…", text: $note, axis: .vertical)
                 .lineLimit(3...6)
                 .autocorrectionDisabled()
         } header: {
-            Text("Заметка (опционально)")
+            Text("Note (optional)")
         }
         .glassListRowBackground()
     }
@@ -286,8 +286,8 @@ struct AddKeyView: View {
     private var groupSection: some View {
         Section {
             Menu {
-                Picker("Группа", selection: $selectedGroupName) {
-                    Text("Без группы").tag("No Group")
+                Picker("Group", selection: $selectedGroupName) {
+                    Text("No group").tag("No Group")
 
                     let platformGroups = platforms.first(where: { $0.name == finalPlatformName })?.groups ?? []
                     ForEach(platformGroups) { group in
@@ -295,11 +295,11 @@ struct AddKeyView: View {
                     }
 
                     Divider()
-                    Text("Новая группа...").tag("New Group")
+                    Text("New group…").tag("New Group")
                 }
             } label: {
                 HStack {
-                    Text(selectedGroupName == "No Group" ? "Без группы" : (selectedGroupName == "New Group" ? "Новая группа" : selectedGroupName))
+                    Text(groupDisplayName)
                         .foregroundStyle(selectedGroupName == "No Group" ? .secondary : .primary)
                     Spacer()
                     Image(systemName: "folder")
@@ -308,11 +308,11 @@ struct AddKeyView: View {
             }
 
             if selectedGroupName == "New Group" {
-                TextField("Название группы", text: $customGroupName)
+                TextField("Group name", text: $customGroupName)
                     .autocorrectionDisabled()
             }
         } header: {
-            Text("Группа (опционально)")
+            Text("Group (optional)")
         }
         .glassListRowBackground()
     }
@@ -330,7 +330,7 @@ struct AddKeyView: View {
             } label: {
                 HStack {
                     if apiKeyValue.isEmpty {
-                        Text("Нажмите чтобы вставить ключ")
+                        Text("Tap to paste key")
                             .foregroundStyle(.secondary)
                     } else {
                         Text(apiKeyValue)
@@ -382,7 +382,7 @@ struct AddKeyView: View {
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())
         } footer: {
-            Text(validationFailed ? "Проверка не пройдена" : " ")
+            Text(validationFailed ? String(localized: "Validation failed") : " ")
                 .foregroundStyle(.red)
         }
     }
@@ -390,6 +390,17 @@ struct AddKeyView: View {
     @ViewBuilder
     private func platformPickerIcon(for name: String) -> some View {
         PlatformIconView(platform: platformForPicker(name: name), size: 28)
+    }
+
+    private var groupDisplayName: String {
+        switch selectedGroupName {
+        case "No Group":
+            return String(localized: "No group")
+        case "New Group":
+            return String(localized: "New group")
+        default:
+            return selectedGroupName
+        }
     }
 
     private func platformForPicker(name: String) -> Platform {
@@ -439,7 +450,7 @@ struct AddKeyView: View {
             }
         } catch {
             await MainActor.run {
-                showError("Не удалось загрузить изображение")
+                showError(String(localized: "Failed to load image"))
             }
         }
     }
@@ -451,8 +462,14 @@ struct AddKeyView: View {
         // Проверка на дубликат ключа (только при создании нового)
         if !isEditMode {
             if let existingKey = findExistingKey(withValue: apiKeyValue) {
-                let platformName = existingKey.platform?.name ?? "Неизвестно"
-                showError("Этот ключ уже добавлен: \"\(existingKey.myName)\" (\(platformName))")
+                let platformName = existingKey.platform?.name ?? String(localized: "Unknown")
+                showError(
+                    String(
+                        format: String(localized: "This key is already added: \"%@\" (%@)"),
+                        existingKey.myName,
+                        platformName
+                    )
+                )
                 // Очищаем поле с ключом, чтобы можно было вставить правильный
                 apiKeyValue = ""
                 return
@@ -615,7 +632,7 @@ struct AddKeyView: View {
         let platformName = finalPlatformName
         
         guard !platformName.isEmpty else {
-            showError("Выберите или введите название платформы")
+            showError(String(localized: "Select or enter a platform name"))
             return
         }
         
@@ -655,7 +672,7 @@ struct AddKeyView: View {
         let saved = KeychainService.shared.save(key: apiKeyValue, for: newKey.keychainID)
         
         guard saved else {
-            showError("Не удалось сохранить ключ в Keychain")
+            showError(String(localized: "Failed to save key to Keychain"))
             return
         }
         
@@ -699,7 +716,7 @@ struct AddKeyView: View {
             let updated = KeychainService.shared.update(key: apiKeyValue, for: editingKey.keychainID)
             
             guard updated else {
-                showError("Не удалось обновить ключ в Keychain")
+                showError(String(localized: "Failed to update key in Keychain"))
                 return
             }
             

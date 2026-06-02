@@ -32,16 +32,14 @@ actor HailuoService {
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
-                return .serverError("Неверный ответ сервера")
+                return .serverError(String(localized: "Invalid server response"))
             }
             
-            // Проверяем base_resp на ошибки авторизации
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let baseResp = json["base_resp"] as? [String: Any],
                let statusCode = baseResp["status_code"] as? Int {
                 let statusMsg = baseResp["status_msg"] as? String ?? ""
                 
-                // Проверяем сообщение на ошибки авторизации
                 let isAuthError = statusMsg.lowercased().contains("login fail") ||
                                   statusMsg.lowercased().contains("invalid api") ||
                                   statusMsg.lowercased().contains("authorization") ||
@@ -49,20 +47,17 @@ actor HailuoService {
                                   statusMsg.lowercased().contains("api secret")
                 
                 if isAuthError {
-                    return .invalid("Неверный API ключ")
+                    return .invalid(String(localized: "Invalid API key"))
                 }
                 
-                // Коды ошибок авторизации MiniMax
                 if statusCode == 1001 || statusCode == 1002 || statusCode == 2049 {
-                    return .invalid(statusMsg.isEmpty ? "Неверный API ключ" : statusMsg)
+                    return .invalid(statusMsg.isEmpty ? String(localized: "Invalid API key") : statusMsg)
                 }
                 
-                // Успешные коды
                 if statusCode == 0 || statusCode == 2013 {
                     return .valid
                 }
                 
-                // 1004 может быть и "file not found" и "login fail"
                 if statusCode == 1004 && !isAuthError {
                     return .valid
                 }
@@ -72,20 +67,20 @@ actor HailuoService {
             case 200...299:
                 return .valid
             case 400:
-                return .invalid("Неверный запрос")
+                return .invalid(String(localized: "Invalid request"))
             case 401:
-                return .invalid("Неверный API ключ")
+                return .invalid(String(localized: "Invalid API key"))
             case 403:
-                return .invalid("Ключ заблокирован")
+                return .invalid(String(localized: "Key blocked"))
             case 429:
                 return .valid
             case 500, 502, 503:
-                return .serverError("Сервер недоступен")
+                return .serverError(String(localized: "Server unavailable"))
             default:
-                return .serverError("Код ошибки: \(httpResponse.statusCode)")
+                return .serverError(String(format: String(localized: "Error code: %lld"), httpResponse.statusCode))
             }
         } catch {
-            return .networkError("Нет подключения к сети")
+            return .networkError(String(localized: "No network connection"))
         }
     }
 }

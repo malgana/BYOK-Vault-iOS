@@ -41,29 +41,29 @@ actor AnthropicService {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
         } catch {
-            return .networkError("Ошибка формирования запроса")
+            return .networkError(String(localized: "Request formation error"))
         }
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
-                return .serverError("Неверный ответ сервера")
+                return .serverError(String(localized: "Invalid server response"))
             }
             
             switch httpResponse.statusCode {
             case 200:
                 return .valid
             case 401:
-                return .invalid("Неверный API ключ")
+                return .invalid(String(localized: "Invalid API key"))
             case 403:
-                return .invalid("Ключ заблокирован")
+                return .invalid(String(localized: "Key blocked"))
             case 429:
                 // Rate limit - но ключ валидный
                 return .valid
             case 500, 529:
                 // Проблемы сервера - сохраняем без валидации
-                return .serverError("Сервер недоступен")
+                return .serverError(String(localized: "Server unavailable"))
             default:
                 // Пробуем получить сообщение об ошибке
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -71,10 +71,10 @@ actor AnthropicService {
                    let message = error["message"] as? String {
                     return .invalid(message)
                 }
-                return .serverError("Код ошибки: \(httpResponse.statusCode)")
+                return .serverError(String(format: String(localized: "Error code: %lld"), httpResponse.statusCode))
             }
         } catch {
-            return .networkError("Нет подключения к сети")
+            return .networkError(String(localized: "No network connection"))
         }
     }
 }

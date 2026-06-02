@@ -120,11 +120,11 @@ struct MainView: View {
             }
             
             VStack(spacing: 8) {
-                Text("Нет API ключей")
+                Text("No API keys")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.primary)
                 
-                Text("Добавьте первый ключ")
+                Text("Add your first key")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -132,7 +132,7 @@ struct MainView: View {
             Button {
                 showingAddKey = true
             } label: {
-                Label("Добавить ключ", systemImage: "plus")
+                Label("Add Key", systemImage: "plus")
                     .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
@@ -185,7 +185,7 @@ struct GlassCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 
-                Text("\(platform.apiKeys.count) \(keysText)")
+                Text(L10n.keysCount(platform.apiKeys.count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -198,16 +198,6 @@ struct GlassCard: View {
         }
     }
     
-    private var keysText: String {
-        let count = platform.apiKeys.count
-        if count == 1 {
-            return "ключ"
-        } else if count >= 2 && count <= 4 {
-            return "ключа"
-        } else {
-            return "ключей"
-        }
-    }
 }
 
 #Preview {

@@ -14,7 +14,7 @@ struct DashboardLinkView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.right.square")
                         .font(.subheadline)
-                    Text("Личный кабинет")
+                    Text("Dashboard")
                         .font(.subheadline)
                 }
                 .foregroundStyle(.secondary)

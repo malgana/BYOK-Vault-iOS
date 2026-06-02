@@ -80,12 +80,12 @@ struct SettingsView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .navigationTitle("Настройки")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .keyVaultNavigationStyle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Готово") {
+                    Button("Done") {
                         dismiss()
                     }
                 }
@@ -98,9 +98,15 @@ struct SettingsView: View {
             ) { result in
                 switch result {
                 case .success:
-                    showAlert(title: "Успешно", message: "Ключи экспортированы")
+                    showAlert(
+                        title: String(localized: "Success"),
+                        message: String(localized: "Keys exported")
+                    )
                 case .failure(let error):
-                    showAlert(title: "Ошибка", message: error.localizedDescription)
+                    showAlert(
+                        title: String(localized: "Error"),
+                        message: error.localizedDescription
+                    )
                 }
             }
             .fileImporter(
@@ -115,18 +121,20 @@ struct SettingsView: View {
             } message: {
                 Text(alertMessage)
             }
-            .alert("Импорт ключей", isPresented: $showingImportConfirmation) {
-                Button("Отмена", role: .cancel) {
+            .alert("Import Keys", isPresented: $showingImportConfirmation) {
+                Button("Cancel", role: .cancel) {
                     pendingImportData = nil
                 }
-                Button("Импортировать") {
+                Button("Import") {
                     if let data = pendingImportData {
                         performImport(data)
                     }
                 }
             } message: {
                 if let data = pendingImportData {
-                    Text("Будет импортировано \(data.keys.count) \(keysCountText(data.keys.count)). Существующие ключи с такими же значениями будут пропущены.")
+                    Text(
+                        "\(String(localized: "Will import")) \(L10n.keysCount(data.keys.count)). \(String(localized: "Existing keys with matching values will be skipped."))"
+                    )
                 }
             }
         }
@@ -135,7 +143,7 @@ struct SettingsView: View {
     // MARK: - Sections
     private var dataSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("Данные")
+            sectionHeader(String(localized: "Data"))
 
             VStack(spacing: 0) {
                 Button {
@@ -144,8 +152,8 @@ struct SettingsView: View {
                     settingsActionRow(
                         icon: "square.and.arrow.up",
                         iconColor: .blue,
-                        title: "Экспорт ключей",
-                        subtitle: "\(allKeys.count) \(keysCountText(allKeys.count))"
+                        title: String(localized: "Export Keys"),
+                        subtitle: L10n.keysCount(allKeys.count)
                     )
                 }
                 .buttonStyle(CardButtonStyle())
@@ -161,8 +169,8 @@ struct SettingsView: View {
                     settingsActionRow(
                         icon: "square.and.arrow.down",
                         iconColor: .green,
-                        title: "Импорт ключей",
-                        subtitle: "Из JSON файла"
+                        title: String(localized: "Import Keys"),
+                        subtitle: String(localized: "From JSON file")
                     )
                 }
                 .buttonStyle(CardButtonStyle())
@@ -171,7 +179,7 @@ struct SettingsView: View {
                 GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
             }
 
-            Text("Экспорт сохраняет все ключи в зашифрованный JSON файл. Храните его в безопасном месте.")
+            Text("Export saves all keys to an encrypted JSON file. Store it in a safe place.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -181,11 +189,11 @@ struct SettingsView: View {
 
     private var statisticsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("Статистика")
+            sectionHeader(String(localized: "Statistics"))
 
             VStack(spacing: 0) {
                 settingsInfoRow(
-                    label: "Платформ",
+                    label: String(localized: "Platforms"),
                     value: "\(platforms.filter { !$0.apiKeys.isEmpty }.count)"
                 )
 
@@ -193,7 +201,7 @@ struct SettingsView: View {
                     .padding(.leading, 20)
 
                 settingsInfoRow(
-                    label: "Всего ключей",
+                    label: String(localized: "Total Keys"),
                     value: "\(allKeys.count)"
                 )
             }
@@ -205,10 +213,10 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("О приложении")
+            sectionHeader(String(localized: "About"))
 
             settingsInfoRow(
-                label: "Версия",
+                label: String(localized: "Version"),
                 value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
             )
             .background {
@@ -249,7 +257,10 @@ struct SettingsView: View {
             exportDocument = KeyVaultDocument(data: jsonData)
             showingExporter = true
         } catch {
-            showAlert(title: "Ошибка", message: "Не удалось создать файл экспорта")
+            showAlert(
+                title: String(localized: "Error"),
+                message: String(localized: "Failed to create export file")
+            )
         }
     }
     
@@ -260,7 +271,10 @@ struct SettingsView: View {
             guard let url = urls.first else { return }
             
             guard url.startAccessingSecurityScopedResource() else {
-                showAlert(title: "Ошибка", message: "Нет доступа к файлу")
+                showAlert(
+                    title: String(localized: "Error"),
+                    message: String(localized: "No access to file")
+                )
                 return
             }
             
@@ -275,11 +289,17 @@ struct SettingsView: View {
                 pendingImportData = importData
                 showingImportConfirmation = true
             } catch {
-                showAlert(title: "Ошибка", message: "Неверный формат файла")
+                showAlert(
+                    title: String(localized: "Error"),
+                    message: String(localized: "Invalid file format")
+                )
             }
             
         case .failure(let error):
-            showAlert(title: "Ошибка", message: error.localizedDescription)
+            showAlert(
+                title: String(localized: "Error"),
+                message: error.localizedDescription
+            )
         }
     }
     
@@ -287,11 +307,9 @@ struct SettingsView: View {
         var importedCount = 0
         var skippedCount = 0
         
-        // Кэш для новых платформ (чтобы не создавать дубликаты в рамках одного импорта)
         var newPlatformsCache: [String: Platform] = [:]
         
         for exportedKey in importData.keys {
-            // Проверяем, нет ли уже такого ключа
             let existingKeyValue = allKeys.first { key in
                 if let storedValue = KeychainService.shared.get(for: key.keychainID) {
                     return storedValue == exportedKey.keyValue
@@ -304,7 +322,6 @@ struct SettingsView: View {
                 continue
             }
             
-            // Находим или создаём платформу
             let platformName = Platform.canonicalPlatformName(exportedKey.platformName)
             let platform: Platform
             if let existingPlatform = platforms.first(where: { $0.name == platformName }) {
@@ -317,16 +334,14 @@ struct SettingsView: View {
                 newPlatformsCache[platformName] = platform
             }
             
-            // Создаём ключ
             let newKey = APIKey(
                 myName: exportedKey.myName,
                 platform: platform,
                 note: exportedKey.note
             )
             newKey.isValid = exportedKey.isValid
-            newKey.dateAdded = exportedKey.dateAdded // Восстанавливаем оригинальную дату
+            newKey.dateAdded = exportedKey.dateAdded
             
-            // Сохраняем в Keychain
             let saved = KeychainService.shared.save(key: exportedKey.keyValue, for: newKey.keychainID)
             
             if saved {
@@ -339,11 +354,11 @@ struct SettingsView: View {
         
         pendingImportData = nil
         
-        var message = "Импортировано: \(importedCount)"
+        var message = String(format: String(localized: "Imported: %lld"), importedCount)
         if skippedCount > 0 {
-            message += "\nПропущено (дубликаты): \(skippedCount)"
+            message += "\n" + String(format: String(localized: "Skipped (duplicates): %lld"), skippedCount)
         }
-        showAlert(title: "Импорт завершён", message: message)
+        showAlert(title: String(localized: "Import completed"), message: message)
     }
     
     // MARK: - Helpers
@@ -415,16 +430,6 @@ struct SettingsView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
-    }
-    
-    private func keysCountText(_ count: Int) -> String {
-        if count == 1 {
-            return "ключ"
-        } else if count >= 2 && count <= 4 {
-            return "ключа"
-        } else {
-            return "ключей"
-        }
     }
 }
 

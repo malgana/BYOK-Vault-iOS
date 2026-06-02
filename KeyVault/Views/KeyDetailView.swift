@@ -18,7 +18,7 @@ struct KeyDetailView: View {
     @State private var showCopiedMessage = false
 
     private var apiKeyValue: String {
-        KeychainService.shared.get(for: apiKey.keychainID) ?? "Ошибка загрузки ключа"
+        KeychainService.shared.get(for: apiKey.keychainID) ?? String(localized: "Failed to load key")
     }
 
     private var hasNote: Bool {
@@ -46,7 +46,7 @@ struct KeyDetailView: View {
 
                 VStack(spacing: 16) {
                     HStack(spacing: 6) {
-                        Text("Ключ")
+                        Text("Key")
                             .font(.headline)
                             .foregroundStyle(.secondary)
 
@@ -102,7 +102,7 @@ struct KeyDetailView: View {
                     Button {
                         showingEditSheet = true
                     } label: {
-                        Label("Редактировать", systemImage: "pencil")
+                        Label("Edit", systemImage: "pencil")
                     }
 
                     Divider()
@@ -110,7 +110,7 @@ struct KeyDetailView: View {
                     Button(role: .destructive) {
                         showingDeleteAlert = true
                     } label: {
-                        Label("Удалить ключ", systemImage: "trash")
+                        Label("Delete Key", systemImage: "trash")
                     }
                 } label: {
                     GlassCircleButton(systemName: "ellipsis.circle")
@@ -120,20 +120,20 @@ struct KeyDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             AddKeyView(editingKey: apiKey)
         }
-        .alert("Удалить ключ?", isPresented: $showingDeleteAlert) {
-            Button("Отмена", role: .cancel) { }
-            Button("Удалить", role: .destructive) {
+        .alert("Delete key?", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
                 deleteKey()
             }
         } message: {
-            Text("Это действие нельзя отменить. Ключ будет удален из приложения и Keychain.")
+            Text("This action cannot be undone. The key will be removed from the app and Keychain.")
         }
     }
 
     private var copiedToast: some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
-            Text("Скопировано")
+            Text("Copied")
         }
         .font(.subheadline)
         .foregroundStyle(.white)

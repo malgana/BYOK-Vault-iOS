@@ -156,7 +156,7 @@ struct PlatformKeysListView: View {
             Button(role: .destructive) {
                 deleteGroup(group)
             } label: {
-                Label("Удалить группу", systemImage: "trash")
+                Label("Delete group", systemImage: "trash")
             }
         }
     }
@@ -272,7 +272,7 @@ struct KeyGlassCard: View {
     private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = Locale.current
         return formatter.string(from: apiKey.dateAdded)
     }
     
