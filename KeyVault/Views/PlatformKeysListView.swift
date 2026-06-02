@@ -59,6 +59,11 @@ struct PlatformKeysListView: View {
                             ungroupedSection(keys: keys)
                         }
                     }
+
+                    if let dashboardURL = platform.resolvedDashboardURL {
+                        DashboardLinkView(urlString: dashboardURL)
+                            .padding(.top, 8)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -300,7 +305,7 @@ struct KeyGlassCard: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
     
-    let platform = Platform(name: "Anthropic")
+    let platform = Platform(name: "Claude")
     let key1 = APIKey(myName: "Рабочий ключ", platform: platform, note: "Для работы с API в продакшене")
     key1.isValid = true
     

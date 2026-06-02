@@ -22,11 +22,14 @@
 
 | Платформа | Иконка |
 |-----------|--------|
-| Anthropic | ✅ |
-| OpenAI | ✅ |
+| Claude | ✅ |
+| GPT | ✅ |
 | Gemini | ✅ |
+| Grok | ✅ |
 | DeepSeek | ✅ |
+| Qwen | ✅ |
 | Hailuo | ✅ |
+| Meta Muse-Spark | ✅ |
 | Reve AI | ✅ |
 | GitHub | ✅ |
 | Google Image Search | ✅ |

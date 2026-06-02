@@ -61,7 +61,7 @@ struct PlatformIconView: View {
 }
 
 #Preview("С иконкой из Assets") {
-    let platform = Platform(name: "Anthropic")
+    let platform = Platform(name: "Claude")
     return PlatformIconView(platform: platform, size: 60)
         .padding()
 }

@@ -28,6 +28,7 @@ struct AddKeyView: View {
     @State private var selectedGroupName: String = "No Group"
     @State private var customGroupName: String = ""
     @State private var customPlatformName: String = ""
+    @State private var customDashboardURL: String = ""
     @State private var isValidating: Bool = false
     @State private var showingError: Bool = false
     @State private var errorMessage: String = ""
@@ -65,7 +66,7 @@ struct AddKeyView: View {
     }
     
     private var supportsValidation: Bool {
-        ["Anthropic", "DeepSeek", "Gemini", "OpenAI", "Hailuo"].contains(finalPlatformName)
+        ["Claude", "DeepSeek", "Gemini", "GPT", "Hailuo"].contains(finalPlatformName)
     }
     
     private var buttonText: String {
@@ -112,6 +113,11 @@ struct AddKeyView: View {
                     await loadSelectedPhoto()
                 }
             }
+            .onChange(of: selectedPlatformName) { _, newValue in
+                if newValue != "New" {
+                    customDashboardURL = ""
+                }
+            }
             .tint(.green)
         }
     }
@@ -137,18 +143,30 @@ struct AddKeyView: View {
                     Picker("Платформа", selection: $selectedPlatformName) {
                         ForEach(availablePlatforms, id: \.self) { platform in
                             if platform == "New" {
-                                Text("NEW")
-                                    .foregroundStyle(.tint)
-                                    .tag(platform)
+                                Label {
+                                    Text("NEW")
+                                        .foregroundStyle(.tint)
+                                } icon: {
+                                    Image(systemName: "plus.circle.fill")
+                                }
+                                .tag(platform)
                             } else {
-                                Text(platform).tag(platform)
+                                Label {
+                                    Text(platform)
+                                } icon: {
+                                    platformPickerIcon(for: platform)
+                                }
+                                .tag(platform)
                             }
                         }
                     }
                     .pickerStyle(.inline)
                     .labelsHidden()
                 } label: {
-                    HStack {
+                    HStack(spacing: 12) {
+                        if !selectedPlatformName.isEmpty, selectedPlatformName != "New" {
+                            platformPickerIcon(for: selectedPlatformName)
+                        }
                         Text(selectedPlatformName.isEmpty ? "Выберите платформу" : selectedPlatformName)
                             .foregroundStyle(selectedPlatformName.isEmpty ? .secondary : .primary)
                         Spacer()
@@ -168,7 +186,36 @@ struct AddKeyView: View {
             }
             .glassListRowBackground()
 
+            if !selectedPlatformName.isEmpty,
+               selectedPlatformName != "New",
+               Platform.defaultDashboardURL(for: selectedPlatformName) != nil {
+                Section {
+                    DashboardLinkView(urlString: Platform.defaultDashboardURL(for: selectedPlatformName))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                }
+                .glassListRowBackground()
+            }
+
             if selectedPlatformName == "New" && !customPlatformName.isEmpty {
+                Section {
+                    TextField("Ссылка на личный кабинет", text: $customDashboardURL)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+
+                    if let dashboardURL = normalizedDashboardURL(customDashboardURL) {
+                        DashboardLinkView(urlString: dashboardURL)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Личный кабинет (опционально)")
+                } footer: {
+                    Text("Например: https://console.example.com/api-keys")
+                }
+                .glassListRowBackground()
+
                 Section {
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         HStack {
@@ -313,20 +360,27 @@ struct AddKeyView: View {
             Button {
                 validateAndSave()
             } label: {
-                HStack {
-                    if isValidating {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else if validationSuccess {
+                HStack(spacing: 8) {
+                    if validationSuccess {
                         Image(systemName: "checkmark")
                     }
                     Text(buttonText)
                 }
                 .frame(maxWidth: .infinity)
-                .foregroundStyle(validationSuccess ? .white : .green)
+                .opacity(isValidating ? 0 : 1)
+                .overlay {
+                    if isValidating {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                }
             }
-            .listRowBackground(saveButtonBackground)
-            .disabled(!isFormValid || isValidating || validationSuccess)
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+            .tint(.green)
+            .disabled(!isFormValid)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
         } footer: {
             Text(validationFailed ? "Проверка не пройдена" : " ")
                 .foregroundStyle(.red)
@@ -334,14 +388,21 @@ struct AddKeyView: View {
     }
 
     @ViewBuilder
-    private var saveButtonBackground: some View {
-        if validationSuccess {
-            RoundedRectangle(cornerRadius: 12).fill(.green)
-        } else {
-            Color.clear.background {
-                GlassBackground(cornerRadius: 12, shadowRadius: 8, shadowY: 4)
-            }
+    private func platformPickerIcon(for name: String) -> some View {
+        PlatformIconView(platform: platformForPicker(name: name), size: 28)
+    }
+
+    private func platformForPicker(name: String) -> Platform {
+        platforms.first(where: { $0.name == name }) ?? Platform(name: name)
+    }
+
+    private func normalizedDashboardURL(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if trimmed.lowercased().hasPrefix("http://") || trimmed.lowercased().hasPrefix("https://") {
+            return trimmed
         }
+        return "https://\(trimmed)"
     }
 
     private func setupInitialValues() {
@@ -385,6 +446,7 @@ struct AddKeyView: View {
     
     private func validateAndSave() {
         guard isFormValid else { return }
+        guard !isValidating && !validationSuccess else { return }
         
         // Проверка на дубликат ключа (только при создании нового)
         if !isEditMode {
@@ -427,11 +489,13 @@ struct AddKeyView: View {
         Task {
             // Выбираем сервис валидации в зависимости от платформы
             switch finalPlatformName {
+            case "Claude":
+                await validateWithAnthropic()
             case "DeepSeek":
                 await validateWithDeepSeek()
             case "Gemini":
                 await validateWithGemini()
-            case "OpenAI":
+            case "GPT":
                 await validateWithOpenAI()
             case "Hailuo":
                 await validateWithHailuo()
@@ -561,7 +625,12 @@ struct AddKeyView: View {
             platform = existingPlatform
         } else {
             // Создаем новую платформу с иконкой (если есть)
-            platform = Platform(name: platformName, customIconData: selectedIconData)
+            platform = Platform(
+                name: platformName,
+                customIconData: selectedIconData,
+                dashboardURL: normalizedDashboardURL(customDashboardURL)
+                    ?? Platform.defaultDashboardURL(for: platformName)
+            )
             modelContext.insert(platform)
         }
         
@@ -660,7 +729,7 @@ struct AddKeyView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
     
-    let platform = Platform(name: "Anthropic")
+    let platform = Platform(name: "Claude")
     let key = APIKey(myName: "Рабочий ключ", platform: platform)
     
     container.mainContext.insert(platform)

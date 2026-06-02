@@ -63,6 +63,8 @@ struct MainView: View {
                 SettingsView()
             }
             .onAppear {
+                Platform.migrateLegacyNames(in: modelContext)
+                Platform.applyDefaultDashboardURLs(in: modelContext)
                 cleanupEmptyPlatforms()
                 withAnimation(.easeOut(duration: 0.5)) {
                     appearAnimation = true
@@ -109,7 +111,7 @@ struct MainView: View {
                     .font(.system(size: 50))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.purple, .blue],
+                            colors: [.blue, .green],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -131,19 +133,12 @@ struct MainView: View {
                 showingAddKey = true
             } label: {
                 Label("Добавить ключ", systemImage: "plus")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(
-                        LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        in: Capsule()
-                    )
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.glass)
+            .controlSize(.large)
+            .padding(.horizontal, 32)
         }
         .padding()
     }

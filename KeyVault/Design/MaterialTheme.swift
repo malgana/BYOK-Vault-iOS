@@ -78,7 +78,7 @@ struct GlassCircleButton: View {
             .font(.title3.weight(.semibold))
             .foregroundStyle(colorScheme == .dark ? .white : .black)
             .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
+            .contentShape(Circle())
     }
 }
 
@@ -102,16 +102,6 @@ extension View {
                 GlassBackground(cornerRadius: cornerRadius, shadowRadius: 8, shadowY: 4)
             }
         )
-    }
-
-    func glassListSectionRow() -> some View {
-        listRowBackground(Color.clear)
-    }
-
-    func glassListSectionBackground(cornerRadius: CGFloat = 16) -> some View {
-        background {
-            GlassBackground(cornerRadius: cornerRadius, shadowRadius: 8, shadowY: 4)
-        }
     }
 
     func glassFormStyle() -> some View {

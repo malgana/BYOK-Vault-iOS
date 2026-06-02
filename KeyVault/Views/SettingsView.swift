@@ -69,88 +69,16 @@ struct SettingsView: View {
                 KeyVaultBackground()
                     .ignoresSafeArea()
                 
-                List {
-                    // Экспорт/Импорт
-                    Section {
-                        Button {
-                            exportKeys()
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Экспорт ключей")
-                                        .foregroundStyle(.primary)
-                                    Text("\(allKeys.count) \(keysCountText(allKeys.count))")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundStyle(.blue)
-                            }
-                        }
-                        .disabled(allKeys.isEmpty)
-                        
-                        Button {
-                            showingImporter = true
-                        } label: {
-                            Label {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Импорт ключей")
-                                        .foregroundStyle(.primary)
-                                    Text("Из JSON файла")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "square.and.arrow.down")
-                                    .foregroundStyle(.green)
-                            }
-                        }
-                    } header: {
-                        Text("Данные")
-                    } footer: {
-                        Text("Экспорт сохраняет все ключи в зашифрованный JSON файл. Храните его в безопасном месте.")
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 24) {
+                        dataSection
+                        statisticsSection
+                        aboutSection
                     }
-                    .glassListRowBackground()
-                    
-                    // Информация
-                    Section {
-                        HStack {
-                            Text("Платформ")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(platforms.filter { !$0.apiKeys.isEmpty }.count)")
-                                .foregroundStyle(.primary)
-                        }
-                        
-                        HStack {
-                            Text("Всего ключей")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(allKeys.count)")
-                                .foregroundStyle(.primary)
-                        }
-                        
-                    } header: {
-                        Text("Статистика")
-                    }
-                    .glassListRowBackground()
-                    
-                    // О приложении
-                    Section {
-                        HStack {
-                            Text("Версия")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                                .foregroundStyle(.primary)
-                        }
-                    } header: {
-                        Text("О приложении")
-                    }
-                    .glassListRowBackground()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 32)
                 }
-                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
@@ -204,6 +132,91 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Sections
+    private var dataSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Данные")
+
+            VStack(spacing: 0) {
+                Button {
+                    exportKeys()
+                } label: {
+                    settingsActionRow(
+                        icon: "square.and.arrow.up",
+                        iconColor: .blue,
+                        title: "Экспорт ключей",
+                        subtitle: "\(allKeys.count) \(keysCountText(allKeys.count))"
+                    )
+                }
+                .buttonStyle(CardButtonStyle())
+                .disabled(allKeys.isEmpty)
+                .opacity(allKeys.isEmpty ? 0.5 : 1)
+
+                Divider()
+                    .padding(.leading, 64)
+
+                Button {
+                    showingImporter = true
+                } label: {
+                    settingsActionRow(
+                        icon: "square.and.arrow.down",
+                        iconColor: .green,
+                        title: "Импорт ключей",
+                        subtitle: "Из JSON файла"
+                    )
+                }
+                .buttonStyle(CardButtonStyle())
+            }
+            .background {
+                GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
+            }
+
+            Text("Экспорт сохраняет все ключи в зашифрованный JSON файл. Храните его в безопасном месте.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+                .padding(.top, 2)
+        }
+    }
+
+    private var statisticsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Статистика")
+
+            VStack(spacing: 0) {
+                settingsInfoRow(
+                    label: "Платформ",
+                    value: "\(platforms.filter { !$0.apiKeys.isEmpty }.count)"
+                )
+
+                Divider()
+                    .padding(.leading, 20)
+
+                settingsInfoRow(
+                    label: "Всего ключей",
+                    value: "\(allKeys.count)"
+                )
+            }
+            .background {
+                GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
+            }
+        }
+    }
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("О приложении")
+
+            settingsInfoRow(
+                label: "Версия",
+                value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+            )
+            .background {
+                GlassBackground(cornerRadius: 16, shadowRadius: 12, shadowY: 6)
+            }
+        }
+    }
+
     // MARK: - Export
     private func exportKeys() {
         var exportedKeys: [ExportedKey] = []
@@ -292,15 +305,16 @@ struct SettingsView: View {
             }
             
             // Находим или создаём платформу
+            let platformName = Platform.canonicalPlatformName(exportedKey.platformName)
             let platform: Platform
-            if let existingPlatform = platforms.first(where: { $0.name == exportedKey.platformName }) {
+            if let existingPlatform = platforms.first(where: { $0.name == platformName }) {
                 platform = existingPlatform
-            } else if let cachedPlatform = newPlatformsCache[exportedKey.platformName] {
+            } else if let cachedPlatform = newPlatformsCache[platformName] {
                 platform = cachedPlatform
             } else {
-                platform = Platform(name: exportedKey.platformName)
+                platform = Platform(name: platformName)
                 modelContext.insert(platform)
-                newPlatformsCache[exportedKey.platformName] = platform
+                newPlatformsCache[platformName] = platform
             }
             
             // Создаём ключ
@@ -333,6 +347,64 @@ struct SettingsView: View {
     }
     
     // MARK: - Helpers
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 4)
+    }
+
+    private func settingsActionRow(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String
+    ) -> some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 36, height: 36)
+                .background(iconColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+                .shadow(color: iconColor.opacity(0.25), radius: 6, x: 0, y: 3)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private func settingsInfoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.body)
+                .foregroundStyle(.primary)
+            Spacer()
+            Text(value)
+                .font(.body)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
     private func showAlert(title: String, message: String) {
         alertTitle = title
         alertMessage = message

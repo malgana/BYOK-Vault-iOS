@@ -86,6 +86,11 @@ struct KeyDetailView: View {
                 .padding(.horizontal)
 
                 Spacer()
+
+                if let dashboardURL = apiKey.platform?.resolvedDashboardURL {
+                    DashboardLinkView(urlString: dashboardURL)
+                        .padding(.bottom, 24)
+                }
             }
         }
         .navigationTitle(apiKey.myName)
@@ -197,7 +202,7 @@ struct KeyDetailView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Platform.self, APIKey.self, configurations: config)
 
-    let platform = Platform(name: "OpenAI")
+    let platform = Platform(name: "GPT")
     let key = APIKey(myName: "Личный ключ", platform: platform)
     key.isValid = true
 
